@@ -10,9 +10,8 @@ import Foundation
 class TimePointGenerator {
     
     func generateTimePoints(for events: [Event]) -> [TimePoint] {
-
         let now = Date()
-        let start = Date()
+       
         var timePoints = [TimePoint]()
         var dates = [Date()]
         dates.append(contentsOf: events.flatMap { [$0.startDate, $0.endDate] }.sorted())
@@ -23,14 +22,10 @@ class TimePointGenerator {
             }
         }
         
-        //print("Generated time points in \(Date().timeIntervalSince(start))")
-        
         return timePoints
-        
     }
     
     func generateTimePoint(for date: Date, from events: [Event]) -> TimePoint {
-        
         var currentArray = [Event]()
         var upcomingArray = [Event]()
         
@@ -41,10 +36,26 @@ class TimePointGenerator {
                 upcomingArray.append(event)
             }
         }
+       
+        let upcomingGrouped = groupEventsByDate(upcomingArray)
         
-        return TimePoint(date: date, inProgressEvents: currentArray, upcomingEvents: upcomingArray)
-        
+        return TimePoint(date: date, inProgressEvents: currentArray, upcomingEvents: upcomingArray, upcomingGrouped: upcomingGrouped)
     }
     
+    private func groupEventsByDate(_ events: [Event]) -> [EventDate] {
+        var eventDictionary = [Date: [Event]]()
+        
+        for event in events {
+            let startOfDay = Calendar.current.startOfDay(for: event.startDate)
+            if eventDictionary[startOfDay] != nil {
+                eventDictionary[startOfDay]?.append(event)
+            } else {
+                eventDictionary[startOfDay] = [event]
+            }
+        }
+        
+        let eventDates = eventDictionary.map { EventDate(date: $0.key, events: $0.value) }
+        
+        return eventDates.sorted { $0.date < $1.date }
+    }
 }
-

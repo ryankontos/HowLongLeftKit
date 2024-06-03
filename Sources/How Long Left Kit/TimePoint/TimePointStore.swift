@@ -49,7 +49,7 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
         
         for point in newPoints {
             if var oldMatch = points?.first(where: { $0.date == point.date }) {
-                let changes = updateTimePoint(timePoint: &oldMatch, from: point)
+                let changes = oldMatch.updateInfo(from: point)
                 if changes { foundChanges = true }
                 newResult.append(oldMatch)
             } else {
@@ -82,13 +82,7 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
         }
     }
     
-    private func updateTimePoint(timePoint: inout TimePoint, from: TimePoint) -> Bool {
-        var flag = false
-        updateIfNeeded(&timePoint.inProgressEvents, compareTo: from.inProgressEvents, flag: &flag)
-        updateIfNeeded(&timePoint.upcomingEvents, compareTo: from.upcomingEvents, flag: &flag)
-        return flag
-        
-    }
+   
     
     public override func eventsChanged() { updatePoints() }
    

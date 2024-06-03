@@ -14,12 +14,15 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
     @Published public var inProgressEvents: [Event]
     @Published public var upcomingEvents: [Event]
     
+    @Published public var upcomingGroupedByStartDay: [EventDate]
+    
     public var id: Date { return date }
     
-    public init(date: Date, inProgressEvents: [Event], upcomingEvents: [Event]) {
+    public init(date: Date, inProgressEvents: [Event], upcomingEvents: [Event], upcomingGrouped: [EventDate]) {
         self.date = date
-        self.inProgressEvents = inProgressEvents // These are sorted by end date in ascending order
-        self.upcomingEvents = upcomingEvents // These are sorted by start date in ascending order
+        self.inProgressEvents = inProgressEvents
+        self.upcomingEvents = upcomingEvents
+        self.upcomingGroupedByStartDay = upcomingGrouped
     }
     
     public static func == (lhs: TimePoint, rhs: TimePoint) -> Bool {
@@ -52,6 +55,15 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
                 return nextUpcomingEvent ?? nextInProgressEvent
             }
         }
+    }
+    
+    
+    func updateInfo(from new: TimePoint) -> Bool {
+        var flag = false
+        updateIfNeeded(&self.inProgressEvents, compareTo: new.inProgressEvents, flag: &flag)
+        updateIfNeeded(&self.upcomingEvents, compareTo: new.upcomingEvents, flag: &flag)
+        updateIfNeeded(&self.upcomingGroupedByStartDay, compareTo: new.upcomingGroupedByStartDay, flag: &flag)
+        return flag
     }
 
 }

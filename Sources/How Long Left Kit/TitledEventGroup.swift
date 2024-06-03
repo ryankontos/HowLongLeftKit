@@ -1,6 +1,6 @@
 //
-//  File.swift
-//  
+//  TitledEventGroup.swift
+//
 //
 //  Created by Ryan on 25/5/2024.
 //
