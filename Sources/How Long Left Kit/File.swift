@@ -2,29 +2,20 @@
 //  File.swift
 //  
 //
-//  Created by Ryan on 9/5/2024.
+//  Created by Ryan on 25/5/2024.
 //
 
 import Foundation
-import Defaults
 
-
-public class CalendarInfoContext: Equatable, Hashable, Codable, Defaults.Serializable, Identifiable {
+public class TitledEventGroup: Identifiable {
     
-    static let global = CalendarInfoContext(id: "global")
-    
-    static public func == (lhs: CalendarInfoContext, rhs: CalendarInfoContext) -> Bool {
-        lhs.id == rhs.id
+    public init(_ title: String?, _ events: [Event]) {
+        self.title = title
+        self.events = events
     }
     
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-    }
+    public var title: String?
+    public var events: [Event]
     
-    public init(id: String) {
-        self.id = id
-    }
-    
-    public let id: String
     
 }

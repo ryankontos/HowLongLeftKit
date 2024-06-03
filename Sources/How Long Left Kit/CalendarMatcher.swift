@@ -7,8 +7,17 @@
 
 import Foundation
 import EventKit
-
+import CoreData
+/*
 class CalendarMatcher {
+    
+    init(context: NSManagedObjectContext, domain: CalendarStorageDomain) {
+        self.context = context
+        self.domain = domain
+    }
+    
+    let context: NSManagedObjectContext
+    let domain: CalendarStorageDomain
     
     func matchCalendars(ekCalendars: [EKCalendar], calendarInfos: [CalendarInfo]) -> [EKCalendar] {
         
@@ -27,7 +36,7 @@ class CalendarMatcher {
         return ekCalendars.first(where: { $0.calendarIdentifier == calendarInfo.id })
     }
     
-    func getUpdatedCalendarInfo(existing calendarInfos: [CalendarInfo], userCalendars: [EKCalendar], stateForNonMatches: CalendarInfo.State) -> (matched: [CalendarInfo], notMatched: [CalendarInfo]){
+    func getUpdatedCalendarInfo(existing calendarInfos: [CalendarInfo], userCalendars: [EKCalendar], contextsForNonMatches: Set<CalendarContext>) -> (matched: [CalendarInfo], notMatched: [CalendarInfo]){
         var updatedCalendars = [CalendarInfo]()
         var noMatchCals = [CalendarInfo]()
 
@@ -35,17 +44,16 @@ class CalendarMatcher {
         for ekCalendar in userCalendars {
             if let match = calendarInfos.first(where: { $0.id == ekCalendar.calendarIdentifier }) ?? calendarInfos.first(where: { $0.title == ekCalendar.title }) {
                 // Found a matching CalendarInfo, update and add to the result
-                updatedCalendars.append(CalendarInfo(ekCalendar, state: match.state))
+                match.title = ekCalendar.title
+                match.id = ekCalendar.calendarIdentifier
+                
             } else {
-                // No match found and includeNonMatches is true, add new CalendarInfo with default toggled
-                updatedCalendars.append(CalendarInfo(ekCalendar, state: stateForNonMatches))
+                
+                let info = CalendarInfo(context: context)
+                info.title = ekCalendar.title
+                info.id = ekCalendar.calendarIdentifier
+                
             }
-        }
-
-        // Now, add CalendarInfos from existing that did not match any ekCalendar
-        let updatedIdentifiers = Set(updatedCalendars.map { $0.id })
-        for calendarInfo in calendarInfos where !updatedIdentifiers.contains(calendarInfo.id) {
-            noMatchCals.append(calendarInfo)
         }
 
         return (updatedCalendars, noMatchCals)
@@ -53,3 +61,4 @@ class CalendarMatcher {
 
 
 }
+*/

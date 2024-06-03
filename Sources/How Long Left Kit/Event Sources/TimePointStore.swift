@@ -15,8 +15,14 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
     var points: [TimePoint]?
     var updateTimer: Timer?
     
+    public var currentPoint: TimePoint? {
+        return getPointAt(date: Date())
+    }
+    
     override public init(eventCache: EventCache) {
         super.init(eventCache: eventCache)
+        updatePoints()
+        
     }
     
     deinit {
@@ -24,19 +30,20 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
     }
     
     public func getPointAt(date: Date) -> TimePoint? {
-        return points?.last(where: { $0.date < date })
+        let p = points?.last(where: { $0.date < date })
+        return p
     }
     
     private func updatePoints() {
         
-        print("Updating points")
+        //print("Updating points")
         
         let oldpoints = points
         var newResult = [TimePoint]()
         var foundChanges = false
         let events = eventCache.getEvents()
         
-        print("Updating points got \(events.count)")
+        //print("Updating points got \(events.count)")
         
         let newPoints = pointGen.generateTimePoints(for: events)
         
@@ -54,8 +61,8 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
         if newResult != oldpoints { foundChanges = true }
         
         if foundChanges {
+            self.points = newResult
             DispatchQueue.main.async {
-                self.points = newResult
                 self.objectWillChange.send()
                 self.scheduleNextUpdate()
             }
@@ -83,6 +90,6 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
         
     }
     
-    override func eventsChanged() { updatePoints() }
+    public override func eventsChanged() { updatePoints() }
    
 }

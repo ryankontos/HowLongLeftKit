@@ -8,7 +8,7 @@
 import Foundation
 import Combine
 
-public class EventCacheObserver {
+open class EventCacheObserver {
     
     let eventCache: EventCache
     
@@ -19,7 +19,7 @@ public class EventCacheObserver {
         observeEventChanges()
     }
     
-    internal func eventsChanged() { }
+    open func eventsChanged() { }
     
     private final func observeEventChanges() {
         eventSubscription = eventCache.objectWillChange

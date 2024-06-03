@@ -14,7 +14,7 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
     @Published public var startDate: Date
     @Published public var endDate: Date
     
-    public var calId: String
+    @Published public var calId: String
     public var id: String
     
     init(event: EKEvent) {
@@ -33,7 +33,7 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
         self.calId = "none"
     }
     
-    func status(at date: Date = Date()) -> Status {
+    public func status(at date: Date = Date()) -> Status {
         
         let endInterval = endDate.timeIntervalSince(date)
         if startDate.timeIntervalSince(date) >= 0 {

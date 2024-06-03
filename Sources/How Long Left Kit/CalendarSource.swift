@@ -37,7 +37,11 @@ public class CalendarSource: ObservableObject {
     
     func getEvents(from calendars: [EKCalendar]) -> [EKEvent] {
         
-        print("Get events from \(calendars.count) calendars")
+        if calendars.isEmpty {
+            return []
+        }
+        
+        //print("Get events from \(calendars.count) calendars")
         
         let start = Date()
         let end = Calendar.current.date(byAdding: .day, value: 14, to: start)!
@@ -45,7 +49,7 @@ public class CalendarSource: ObservableObject {
         let request = eventStore.predicateForEvents(withStart: start, end: end, calendars: calendars)
         let events = eventStore.events(matching: request)
         
-        print("Get events returning \(events.count) events")
+        //print("Get events returning \(events.count) events")
         
         return events
         

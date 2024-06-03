@@ -23,7 +23,7 @@ class TimePointGenerator {
             }
         }
         
-        print("Generated time points in \(Date().timeIntervalSince(start))")
+        //print("Generated time points in \(Date().timeIntervalSince(start))")
         
         return timePoints
         

@@ -8,7 +8,7 @@
 import Foundation
 import EventKit
 import Defaults
-
+/*
 public class CalendarInfo: ObservableObject, Codable, Hashable, Identifiable, Defaults.Serializable {
     
     static public func == (lhs: CalendarInfo, rhs: CalendarInfo) -> Bool {
@@ -19,19 +19,19 @@ public class CalendarInfo: ObservableObject, Codable, Hashable, Identifiable, De
         hasher.combine(self)
     }
     
-    convenience init(_ calendar: EKCalendar, state: State) {
-       self.init(title: calendar.title, id: calendar.calendarIdentifier, state: state)
+    convenience init(_ calendar: EKCalendar, allowedContexts: Set<String>) {
+       self.init(title: calendar.title, id: calendar.calendarIdentifier, allowedContexts: allowedContexts)
     }
     
-    public init(title: String, id: String, state: State) {
+    public init(title: String, id: String, allowedContexts: Set<String>) {
         self.title = title
         self.id = id
-        self.state = state
+        self.allowedContexts = allowedContexts
     }
     
     public var title: String
     public var id: String
-    @Published public private(set) var state: State {
+    @Published public var allowedContexts: Set<String> {
         didSet {
             DispatchQueue.main.async {
                 self.objectWillChange.send()
@@ -40,44 +40,29 @@ public class CalendarInfo: ObservableObject, Codable, Hashable, Identifiable, De
     }
     
     
-    public func updateState(newState: State) {
-            self.state = newState
-        DispatchQueue.main.async {
-            self.objectWillChange.send()
-        }
-        }
-    
     // Codable conformance with custom encoding and decoding
     enum CodingKeys: String, CodingKey {
         case title
         case id
-        case state
+        case allowedContexts
     }
 
     required public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         title = try container.decode(String.self, forKey: .title)
         id = try container.decode(String.self, forKey: .id)
-        state = try container.decode(State.self, forKey: .state)
+        allowedContexts = try container.decode(Set<String>.self, forKey: .allowedContexts)
     }
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(title, forKey: .title)
         try container.encode(id, forKey: .id)
-        try container.encode(state, forKey: .state)
+        try container.encode(allowedContexts, forKey: .allowedContexts)
     }
     
-    public enum State: Codable, Defaults.Serializable {
-        case disabled
-        case enabled(EnabledMode)
-        
-        
-        public enum EnabledMode: String, Codable, Defaults.Serializable {
-            case global
-            case statusItemOnly
-        }
-    }
+    
     
 }
 
+*/

@@ -20,30 +20,35 @@ public class EventCache: ObservableObject {
     private var eventStoreSubscription: AnyCancellable?
     private var calendarPrefsSubscription: AnyCancellable?
     
+    private var calendarContexts: Set<String>
     
-    private weak var preferenceManager: CalendarPreferenceManager? {
+    private weak var calendarProvider: (any AllowedCalendarsProvider)? {
         didSet {
             setupCalendarsSubscription()
         }
     }
     
-    public init(calendarReader: CalendarSource, preferenceManager: CalendarPreferenceManager) {
+    public init(calendarReader: CalendarSource, calendarProvider: any AllowedCalendarsProvider, calendarContexts: Set<String>) {
         self.calendarReader = calendarReader
-        self.preferenceManager = preferenceManager
+        self.calendarProvider = calendarProvider
+        self.calendarContexts = calendarContexts
         setupEventStoreSubscription()
         setupCalendarsSubscription()
         updateEvents()
+        
+        while calendarReader.authorization == .notDetermined { }
+        
     }
     
     private func setupCalendarsSubscription() {
         
-        guard let preferenceManager else { return }
+        guard let calendarProvider else { return }
         calendarPrefsSubscription?.cancel()
         calendarPrefsSubscription = nil
-        calendarPrefsSubscription = preferenceManager.objectWillChange
+        calendarPrefsSubscription = calendarProvider.objectWillChange
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                print("Cals changed")
+                //print("Cals changed")
                 self?.updateEvents()
             }
             
@@ -58,6 +63,7 @@ public class EventCache: ObservableObject {
         eventStoreSubscription = NotificationCenter.default.publisher(for: .EKEventStoreChanged, object: calendarReader.eventStore)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
+                self?.calendarProvider?.updateForNewCals()
                 self?.updateEvents()
             }
             
@@ -71,12 +77,12 @@ public class EventCache: ObservableObject {
     
     private func updateEvents() {
         
-        print("Updating events")
+        //print("Updating events")
             
         var foundChanges = false
         let oldCache = eventCache
         var newEventCache = [Event]()
-        let newEvents = calendarReader.getEvents(from: preferenceManager!.getEKCalendars(withMode: .global))
+        let newEvents = calendarReader.getEvents(from: calendarProvider!.getAllowedCalendars(matchingContextIn: calendarContexts))
        
         for ekEvent in newEvents {
             if var existingMatch = oldCache?.first(where: { ekEvent.id == $0.id }) {
@@ -93,10 +99,12 @@ public class EventCache: ObservableObject {
         stale = false
         
         if foundChanges {
-            DispatchQueue.main.async {
+            
                 self.eventCache = newEventCache
+            DispatchQueue.main.async {
                 self.objectWillChange.send()
             }
+            
         }
     }
     
@@ -105,6 +113,7 @@ public class EventCache: ObservableObject {
         updateIfNeeded(&Event.title, compareTo: ekEvent.title, flag: &changes)
         updateIfNeeded(&Event.startDate, compareTo: ekEvent.startDate, flag: &changes)
         updateIfNeeded(&Event.endDate, compareTo: ekEvent.endDate, flag: &changes)
+        updateIfNeeded(&Event.calId, compareTo: ekEvent.calendar.calendarIdentifier, flag: &changes)
         return changes
     }
     

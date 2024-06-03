@@ -11,7 +11,7 @@ import EventKit
 extension EKEvent: Identifiable {
     
     public var id: String {
-        return "\(eventIdentifier!)\(startDate!)"
+        return "\(eventIdentifier!)\(startDate!)\(endDate!)\(title!)\(self.calendar.calendarIdentifier)"
     }
     
 }
