@@ -15,6 +15,9 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
     @Published public var endDate: Date
     
     @Published public var calId: String
+    
+    @Published public var isAllDay: Bool
+    
     public var id: String
     
     init(event: EKEvent) {
@@ -23,14 +26,16 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
         self.endDate = event.endDate
         self.id = event.id
         self.calId = event.calendar?.calendarIdentifier ?? "Nil"
+        self.isAllDay = event.isAllDay
     }
     
-    public init(title: String, start: Date, end: Date) {
+    public init(title: String, start: Date, end: Date, isAllDay: Bool = false) {
         self.title = title
         self.startDate = start
         self.endDate = end
         self.id = title
         self.calId = "none"
+        self.isAllDay = isAllDay
     }
     
     public func status(at date: Date = Date()) -> Status {
