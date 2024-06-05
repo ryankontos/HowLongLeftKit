@@ -25,7 +25,14 @@ public class CalendarSource: ObservableObject {
     }
     
     func requestCalendarAccess() async -> Bool {
-        let optionalResult = try? await eventStore.requestFullAccessToEvents()
+        
+        var optionalResult: Bool?
+        
+        if #available(macOS 14.0, *) {
+             optionalResult = try? await eventStore.requestFullAccessToEvents()
+        } else {
+            optionalResult = try? await eventStore.requestAccess(to: .event)
+        }
         let result = optionalResult ?? false
        
         DispatchQueue.main.async {

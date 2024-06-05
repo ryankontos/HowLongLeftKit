@@ -71,7 +71,7 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
     
     private func scheduleNextUpdate() {
         updateTimer?.invalidate()
-        let now = Date.now
+        let now = Date()
         if let nextUpdateTime = points?.first(where: { $0.date > now })?.date {
             let now = Date()
             if nextUpdateTime > now {
