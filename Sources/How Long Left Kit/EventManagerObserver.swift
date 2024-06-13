@@ -13,6 +13,7 @@ open class EventCacheObserver {
     let eventCache: EventCache
     
     private var eventSubscription: AnyCancellable?
+    private let queue = DispatchQueue(label: "com.howlongleft.EventCacheObserver", attributes: .concurrent)
     
     public init(eventCache: EventCache) {
         self.eventCache = eventCache
@@ -23,15 +24,16 @@ open class EventCacheObserver {
     
     private final func observeEventChanges() {
         eventSubscription = eventCache.objectWillChange
+            .receive(on: queue)
             .sink(receiveValue: { [weak self] _ in
                 DispatchQueue.main.async {
                     self?.eventsChanged()
                 }
             })
-       }
-       
+    }
+    
     deinit {
         eventSubscription?.cancel()
     }
-    
 }
+
