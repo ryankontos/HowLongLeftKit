@@ -114,6 +114,7 @@ public class EventCache: ObservableObject {
         updateIfNeeded(&Event.startDate, compareTo: ekEvent.startDate, flag: &changes)
         updateIfNeeded(&Event.endDate, compareTo: ekEvent.endDate, flag: &changes)
         updateIfNeeded(&Event.calId, compareTo: ekEvent.calendar.calendarIdentifier, flag: &changes)
+        updateIfNeeded(&Event.structuredLocation, compareTo: ekEvent.structuredLocation, flag: &changes)
         return changes
     }
     
