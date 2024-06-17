@@ -18,6 +18,16 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
     
     @Published public var isAllDay: Bool
     
+    @Published public var structuredLocation: EKStructuredLocation?
+    
+    public var locationName: String? {
+        return structuredLocation?.title
+    }
+    
+    public var location: CLLocation? {
+        return structuredLocation?.geoLocation
+    }
+    
     public var id: String
     
     init(event: EKEvent) {
@@ -27,6 +37,7 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
         self.id = event.id
         self.calId = event.calendar?.calendarIdentifier ?? "Nil"
         self.isAllDay = event.isAllDay
+        self.structuredLocation = event.structuredLocation
     }
     
     public init(title: String, start: Date, end: Date, isAllDay: Bool = false) {
