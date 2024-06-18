@@ -49,6 +49,14 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
         self.isAllDay = isAllDay
     }
     
+    public func countdownDate(at date: Date = Date()) -> Date {
+        if status(at: date) == .upcoming {
+            return startDate
+        } else {
+            return endDate
+        }
+    }
+    
     public func status(at date: Date = Date()) -> Status {
         
         let endInterval = endDate.timeIntervalSince(date)
