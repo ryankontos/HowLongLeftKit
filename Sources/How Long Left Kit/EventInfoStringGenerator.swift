@@ -28,7 +28,7 @@ public class EventCountdownTextGenerator: EventInfoStringGenerator {
         case .inProgress:
             return "\(formatTimeInterval(to: event.endDate)) remaining"
         case .upcoming:
-            return "begins in \(formatTimeInterval(to: event.startDate))"
+            return "in \(formatTimeInterval(to: event.startDate))"
         }
     }
     

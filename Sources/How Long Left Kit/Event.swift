@@ -21,7 +21,7 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
     @Published public var structuredLocation: EKStructuredLocation?
     
     public var locationName: String? {
-        return structuredLocation?.title
+        return structuredLocation?.title?.trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
     public var location: CLLocation? {
@@ -31,7 +31,7 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
     public var id: String
     
     init(event: EKEvent) {
-        self.title = event.title
+        self.title = event.title.trimmingCharacters(in: .whitespacesAndNewlines)
         self.startDate = event.startDate
         self.endDate = event.endDate
         self.id = event.id

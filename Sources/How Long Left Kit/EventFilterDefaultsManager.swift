@@ -4,21 +4,27 @@ import Combine
 import EventKit
 import CoreData
 
-public class EventFilterDefaultsManager: ObservableObject, AllowedCalendarsProvider {
+public class EventFilterDefaultsManager: ObservableObject, EventFilteringOptionsProvider {
+  
     
     public struct Configuration {
         public init(domain: String, defaultContextsForNonMatches: Set<String>) {
             self.domain = domain
             self.defaultContextsForNonMatches = defaultContextsForNonMatches
+            self.allowAllDayKey = Defaults.Key<Bool>("HLL_EventFiltering_\(domain)_AllowAllDayEvents", default: true)
         }
 
+ 
+        
+        public let allowAllDayKey: Defaults.Key<Bool>
+        
         var domain: String
         var defaultContextsForNonMatches: Set<String>
     }
     
     static let context = HLLPersistenceController.shared.viewContext
 
-    @Published var configuration: Configuration
+    @Published public var configuration: Configuration
     @Published public var calendarItems: [CalendarInfo] = []
     
     private let calendarSource: CalendarSource
@@ -32,6 +38,15 @@ public class EventFilterDefaultsManager: ObservableObject, AllowedCalendarsProvi
         syncCalendarsWithDomain()
         updateCalendarItems()
         updateSubscriptions()
+        
+        Task {
+            for await _ in Defaults.updates(config.allowAllDayKey) {
+                DispatchQueue.main.async {
+                    self.objectWillChange.send()
+                }
+            }
+        }
+        
     }
     
     private func fetchOrCreateDomainObject() {
@@ -109,6 +124,10 @@ public class EventFilterDefaultsManager: ObservableObject, AllowedCalendarsProvi
         } catch {
             handleError(error, message: "Error updating calendar items")
         }
+    }
+    
+    public func getAllDayAllowed() -> Bool {
+        return Defaults[configuration.allowAllDayKey]
     }
     
     private func updateSubscriptions() {
@@ -240,10 +259,4 @@ extension EventFilterDefaultsManager {
         // Here we can use a logging framework or any error handling strategy
         //print("\(message): \(error)")
     }
-}
-
-public protocol AllowedCalendarsProvider: ObservableObject {
-    var objectWillChange: ObservableObjectPublisher { get }
-    func getAllowedCalendars(matchingContextIn contexts: Set<String>) -> [EKCalendar]
-    func updateForNewCals()
 }

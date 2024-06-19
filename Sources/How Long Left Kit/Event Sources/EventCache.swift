@@ -22,13 +22,13 @@ public class EventCache: ObservableObject {
     
     private var calendarContexts: Set<String>
     
-    private weak var calendarProvider: (any AllowedCalendarsProvider)? {
+    private weak var calendarProvider: (any EventFilteringOptionsProvider)? {
         didSet {
             setupCalendarsSubscription()
         }
     }
     
-    public init(calendarReader: CalendarSource, calendarProvider: any AllowedCalendarsProvider, calendarContexts: Set<String>) {
+    public init(calendarReader: CalendarSource, calendarProvider: any EventFilteringOptionsProvider, calendarContexts: Set<String>) {
         self.calendarReader = calendarReader
         self.calendarProvider = calendarProvider
         self.calendarContexts = calendarContexts
@@ -79,11 +79,17 @@ public class EventCache: ObservableObject {
         
         //print("Updating events")
             
+        guard let calendarProvider else {
+            return
+        }
+        
         var foundChanges = false
         let oldCache = eventCache
         var newEventCache = [Event]()
-        let newEvents = calendarReader.getEvents(from: calendarProvider!.getAllowedCalendars(matchingContextIn: calendarContexts))
-       
+        let newEvents = calendarReader.getEvents(from: calendarProvider.getAllowedCalendars(matchingContextIn: calendarContexts))
+            .filter { event in calendarProvider.getAllDayAllowed() || !event.isAllDay }
+
+        
         for ekEvent in newEvents {
             if var existingMatch = oldCache?.first(where: { ekEvent.id == $0.id }) {
                 let changes = updateEvent(Event: &existingMatch, from: ekEvent)

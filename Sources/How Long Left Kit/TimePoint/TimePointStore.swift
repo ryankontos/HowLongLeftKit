@@ -48,7 +48,7 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
         let newPoints = pointGen.generateTimePoints(for: events)
         
         for point in newPoints {
-            if var oldMatch = points?.first(where: { $0.date == point.date }) {
+            if let oldMatch = points?.first(where: { $0.date == point.date }) {
                 let changes = oldMatch.updateInfo(from: point)
                 if changes { foundChanges = true }
                 newResult.append(oldMatch)

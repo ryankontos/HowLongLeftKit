@@ -16,18 +16,19 @@ public class InfoStringManager: ObservableObject {
     private var stringGenerator: EventInfoStringGenerator
     private var event: Event
     
-    public init(event: Event, stringGenerator: EventInfoStringGenerator, publisher: AnyPublisher<Void, Never>? = nil) {
+    public init(event: Event, stringGenerator: EventInfoStringGenerator) {
         
         self.event = event
         self.stringGenerator = stringGenerator
         
         updateInfo()
         
-        let defaultPublisher = Timer.publish(every: 1.0, on: .main, in: .common).autoconnect().map { _ in () }.eraseToAnyPublisher()
-        let updatePublisher = publisher ?? defaultPublisher
+       
+    }
+    
+    public func setPublisher(_ publisher: AnyPublisher<Void, Never>) {
         
-        
-        updatePublisher
+        publisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.updateInfo()

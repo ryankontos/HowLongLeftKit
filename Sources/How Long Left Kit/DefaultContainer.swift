@@ -14,6 +14,8 @@ open class DefaultContainer {
     public let eventCache: EventCache
     public let pointStore: TimePointStore
     
+    public let timerContainer = GlobalTimerContainer()
+    
     public init() {
         
         calendarReader = CalendarSource(requestCalendarAccessImmediately: true)
