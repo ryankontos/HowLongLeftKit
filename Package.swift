@@ -11,7 +11,6 @@ let package = Package(
     products: [
         .library(
             name: "HowLongLeftKit",
-            type: .dynamic,
             targets: ["HowLongLeftKit"]),
     ],
     dependencies: [
