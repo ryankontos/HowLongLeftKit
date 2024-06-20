@@ -14,15 +14,17 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
     @Published public var inProgressEvents: [Event]
     @Published public var upcomingEvents: [Event]
     
-    @Published public var upcomingGroupedByStartDay: [EventDate]
+    @Published public var allGroupedByCountdownDate: [EventDate]
+    @Published public var upcomingGroupedByStart: [EventDate]
     
     public var id: Date { return date }
     
-    public init(date: Date, inProgressEvents: [Event], upcomingEvents: [Event], upcomingGrouped: [EventDate]) {
+    public init(date: Date, inProgressEvents: [Event], upcomingEvents: [Event], allGroupedByCountdownDate: [EventDate], upcomingGroupedByStart: [EventDate]) {
         self.date = date
         self.inProgressEvents = inProgressEvents
         self.upcomingEvents = upcomingEvents
-        self.upcomingGroupedByStartDay = upcomingGrouped
+        self.allGroupedByCountdownDate = allGroupedByCountdownDate
+        self.upcomingGroupedByStart = upcomingGroupedByStart
     }
     
     public static func == (lhs: TimePoint, rhs: TimePoint) -> Bool {
@@ -62,7 +64,8 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
         var flag = false
         updateIfNeeded(&self.inProgressEvents, compareTo: new.inProgressEvents, flag: &flag)
         updateIfNeeded(&self.upcomingEvents, compareTo: new.upcomingEvents, flag: &flag)
-        updateIfNeeded(&self.upcomingGroupedByStartDay, compareTo: new.upcomingGroupedByStartDay, flag: &flag)
+        updateIfNeeded(&self.allGroupedByCountdownDate, compareTo: new.allGroupedByCountdownDate, flag: &flag)
+        updateIfNeeded(&self.upcomingGroupedByStart, compareTo: new.upcomingGroupedByStart, flag: &flag)
         return flag
     }
 

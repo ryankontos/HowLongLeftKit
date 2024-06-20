@@ -9,6 +9,12 @@ import Foundation
 
 class TimePointGenerator {
     
+    private var groupMode: GroupMode
+    
+    init(groupingMode: GroupMode) {
+        self.groupMode = groupingMode
+    }
+    
     func generateTimePoints(for events: [Event]) -> [TimePoint] {
         let now = Date()
        
@@ -37,16 +43,27 @@ class TimePointGenerator {
             }
         }
        
-        let upcomingGrouped = groupEventsByDate(upcomingArray)
+        let grouped = groupEventsByDate(events, at: date, by: .countdownDate)
+        let upcomingGroup = groupEventsByDate(upcomingArray, at: date, by: .start)
         
-        return TimePoint(date: date, inProgressEvents: currentArray, upcomingEvents: upcomingArray, upcomingGrouped: upcomingGrouped)
+        return TimePoint(date: date, inProgressEvents: currentArray, upcomingEvents: upcomingArray, allGroupedByCountdownDate: grouped, upcomingGroupedByStart: upcomingGroup)
     }
     
-    private func groupEventsByDate(_ events: [Event]) -> [EventDate] {
+    private func groupEventsByDate(_ events: [Event], at date: Date = Date(), by: GroupMode) -> [EventDate] {
         var eventDictionary = [Date: [Event]]()
         
         for event in events {
-            let startOfDay = Calendar.current.startOfDay(for: event.startDate)
+            
+            var groupUsing: Date
+            
+            switch by {
+            case .start:
+                groupUsing = event.startDate
+            case .countdownDate:
+                groupUsing = event.countdownDate(at: date)
+            }
+            
+            let startOfDay = Calendar.current.startOfDay(for: groupUsing)
             if eventDictionary[startOfDay] != nil {
                 eventDictionary[startOfDay]?.append(event)
             } else {
@@ -58,4 +75,10 @@ class TimePointGenerator {
         
         return eventDates.sorted { $0.date < $1.date }
     }
+    
+    enum GroupMode {
+        case start
+        case countdownDate
+    }
+    
 }

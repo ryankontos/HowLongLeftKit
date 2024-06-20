@@ -10,7 +10,7 @@ import Combine
 
 public class TimePointStore: EventCacheObserver, ObservableObject {
     
-    private let pointGen = TimePointGenerator()
+    private let pointGen = TimePointGenerator(groupingMode: .countdownDate)
     
     var points: [TimePoint]?
     var updateTimer: Timer?

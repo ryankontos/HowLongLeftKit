@@ -17,5 +17,9 @@ public class TitledEventGroup: Identifiable {
     public var title: String?
     public var events: [Event]
     
+    static public func makeGroup(title: String?, events: [Event], makeIfEmpty: Bool) -> TitledEventGroup? {
+        guard !events.isEmpty || makeIfEmpty else { return nil }
+        return TitledEventGroup(title, events)
+    }
     
 }

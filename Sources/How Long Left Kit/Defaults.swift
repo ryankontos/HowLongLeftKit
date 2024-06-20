@@ -11,8 +11,7 @@ import EventKit
 
 extension Defaults.Keys {
     
-    // MARK: - General
-    static public let showAllDayEvents = Defaults.Key<Bool>("howlongleft_showAllDayEvents", default: true)
+   
     
     
     
