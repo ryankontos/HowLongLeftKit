@@ -20,6 +20,9 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
     
     @Published public var structuredLocation: EKStructuredLocation?
     
+    @Published internal(set) public var isHidden: Bool = false
+    @Published internal(set) public var isPinned: Bool = false
+    
     public var locationName: String? {
         return structuredLocation?.title?.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -28,16 +31,25 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
         return structuredLocation?.geoLocation
     }
     
+    public var eventIdentifier: String
+    
     public var id: String
     
-    init(event: EKEvent) {
+    init(event: EKEvent, eventInfo: EventInfo?) {
         self.title = event.title.trimmingCharacters(in: .whitespacesAndNewlines)
         self.startDate = event.startDate
         self.endDate = event.endDate
         self.id = event.id
+        self.eventIdentifier = event.eventIdentifier
         self.calId = event.calendar?.calendarIdentifier ?? "Nil"
         self.isAllDay = event.isAllDay
         self.structuredLocation = event.structuredLocation
+        
+        if let eventInfo = eventInfo {
+            self.isHidden = eventInfo.isHidden
+            self.isPinned = eventInfo.isPinned
+        }
+        
     }
     
     public init(title: String, start: Date, end: Date, isAllDay: Bool = false) {
@@ -47,6 +59,9 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
         self.id = title
         self.calId = "none"
         self.isAllDay = isAllDay
+        self.isHidden = false
+        self.isPinned = false
+        self.eventIdentifier = "none"
     }
     
     public func countdownDate(at date: Date = Date()) -> Date {

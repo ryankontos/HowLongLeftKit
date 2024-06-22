@@ -7,24 +7,30 @@
 
 import Foundation
 
-open class DefaultContainer {
+open class DefaultContainer: ObservableObject {
     
     public let calendarReader: CalendarSource
-    public let calendarPrefsManager: EventFilterDefaultsManager
+    public let calendarPrefsManager: EventFetchSettingsManager
     public let eventCache: EventCache
     public let pointStore: TimePointStore
+    
+    public let storedEventManager: StoredEventManager
     
     public let timerContainer = GlobalTimerContainer()
     
     public init() {
         
+        let domainString = "app"
+        
         calendarReader = CalendarSource(requestCalendarAccessImmediately: true)
         
         let appSet: Set<String> = [HLLStandardCalendarContexts.app.rawValue]
-        let config = EventFilterDefaultsManager.Configuration(domain: "app", defaultContextsForNonMatches: appSet)
-        calendarPrefsManager = EventFilterDefaultsManager(calendarSource: calendarReader, config: config)
+        let config = EventFetchSettingsManager.Configuration(domain: domainString, defaultContextsForNonMatches: appSet)
+        calendarPrefsManager = EventFetchSettingsManager(calendarSource: calendarReader, config: config)
         
-        eventCache = EventCache(calendarReader: calendarReader, calendarProvider: calendarPrefsManager, calendarContexts: [HLLStandardCalendarContexts.app.rawValue])
+        storedEventManager = StoredEventManager(domain: domainString)
+        
+        eventCache = EventCache(calendarReader: calendarReader, calendarProvider: calendarPrefsManager, calendarContexts: [HLLStandardCalendarContexts.app.rawValue], storedEventManager: storedEventManager)
         pointStore = TimePointStore(eventCache: eventCache)
         
         

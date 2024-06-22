@@ -15,4 +15,14 @@
         <attribute name="showAllDayEvents" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <relationship name="calendarInfos" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="CalendarInfo" inverseName="domain" inverseEntity="CalendarInfo"/>
     </entity>
+    <entity name="EventInfo" representedClassName="EventInfo" syncable="YES" codeGenerationType="class">
+        <attribute name="eventID" optional="YES" attributeType="String"/>
+        <attribute name="isHidden" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isPinned" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <relationship name="domain" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="EventInfoStorageDomain" inverseName="eventInfos" inverseEntity="EventInfoStorageDomain"/>
+    </entity>
+    <entity name="EventInfoStorageDomain" representedClassName="EventInfoStorageDomain" syncable="YES" codeGenerationType="class">
+        <attribute name="domainID" optional="YES" attributeType="String"/>
+        <relationship name="eventInfos" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="EventInfo" inverseName="domain" inverseEntity="EventInfo"/>
+    </entity>
 </model>

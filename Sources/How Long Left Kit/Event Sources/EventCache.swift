@@ -18,6 +18,7 @@ public class EventCache: ObservableObject {
     
     
     private var eventStoreSubscription: AnyCancellable?
+    private var storedEventManagerSubscription: AnyCancellable?
     private var calendarPrefsSubscription: AnyCancellable?
     
     private var calendarContexts: Set<String>
@@ -28,12 +29,20 @@ public class EventCache: ObservableObject {
         }
     }
     
-    public init(calendarReader: CalendarSource, calendarProvider: any EventFilteringOptionsProvider, calendarContexts: Set<String>) {
+    private weak var storedEventManager: StoredEventManager? {
+        didSet {
+            setupStoredEventManagerSubscription()
+        }
+    }
+    
+    public init(calendarReader: CalendarSource, calendarProvider: any EventFilteringOptionsProvider, calendarContexts: Set<String>, storedEventManager: StoredEventManager) {
         self.calendarReader = calendarReader
         self.calendarProvider = calendarProvider
         self.calendarContexts = calendarContexts
+        self.storedEventManager = storedEventManager
         setupEventStoreSubscription()
         setupCalendarsSubscription()
+        setupStoredEventManagerSubscription()
         updateEvents()
         
         while calendarReader.authorization == .notDetermined { }
@@ -46,6 +55,20 @@ public class EventCache: ObservableObject {
         calendarPrefsSubscription?.cancel()
         calendarPrefsSubscription = nil
         calendarPrefsSubscription = calendarProvider.objectWillChange
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                //print("Cals changed")
+                self?.updateEvents()
+            }
+            
+    }
+    
+    private func setupStoredEventManagerSubscription() {
+        
+        guard let storedEventManager else { return }
+        storedEventManagerSubscription?.cancel()
+        storedEventManagerSubscription = nil
+        storedEventManagerSubscription = storedEventManager.objectWillChange
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 //print("Cals changed")
@@ -77,7 +100,7 @@ public class EventCache: ObservableObject {
     
     private func updateEvents() {
         
-        //print("Updating events")
+        print("Updating events")
             
         guard let calendarProvider else {
             return
@@ -91,13 +114,24 @@ public class EventCache: ObservableObject {
 
         
         for ekEvent in newEvents {
+            
+            let eventInfo = storedEventManager!.fetchEventInfo(matching: ekEvent.eventIdentifier)
+            
+            if let eventInfo {
+                print("Found event info")
+                if eventInfo.isHidden {
+                    foundChanges = true
+                    continue
+                }
+            }
+            
             if var existingMatch = oldCache?.first(where: { ekEvent.id == $0.id }) {
-                let changes = updateEvent(Event: &existingMatch, from: ekEvent)
+                let changes = updateEvent(Event: &existingMatch, from: ekEvent, eventInfo: eventInfo)
                 if changes { foundChanges = true }
                 newEventCache.append(existingMatch)
             } else {
                 foundChanges = true
-                newEventCache.append(Event(event: ekEvent))
+                newEventCache.append(Event(event: ekEvent, eventInfo: eventInfo))
             }
         }
         
@@ -114,8 +148,15 @@ public class EventCache: ObservableObject {
         }
     }
     
-    private func updateEvent(Event: inout Event, from ekEvent: EKEvent) -> Bool {
+    private func updateEvent(Event: inout Event, from ekEvent: EKEvent, eventInfo: EventInfo?) -> Bool {
+        
         var changes = false
+        
+        if let eventInfo {
+            updateIfNeeded(&Event.isHidden, compareTo: eventInfo.isHidden, flag: &changes)
+            updateIfNeeded(&Event.isPinned, compareTo: eventInfo.isPinned, flag: &changes)
+        }
+        
         updateIfNeeded(&Event.title, compareTo: ekEvent.title, flag: &changes)
         updateIfNeeded(&Event.startDate, compareTo: ekEvent.startDate, flag: &changes)
         updateIfNeeded(&Event.endDate, compareTo: ekEvent.endDate, flag: &changes)

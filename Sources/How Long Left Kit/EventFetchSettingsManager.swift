@@ -4,7 +4,7 @@ import Combine
 import EventKit
 import CoreData
 
-public class EventFilterDefaultsManager: ObservableObject, EventFilteringOptionsProvider {
+public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsProvider {
   
     
     public struct Configuration {
@@ -13,8 +13,6 @@ public class EventFilterDefaultsManager: ObservableObject, EventFilteringOptions
             self.defaultContextsForNonMatches = defaultContextsForNonMatches
             self.allowAllDayKey = Defaults.Key<Bool>("HLL_EventFiltering_\(domain)_AllowAllDayEvents", default: true)
         }
-
- 
         
         public let allowAllDayKey: Defaults.Key<Bool>
         
@@ -187,7 +185,7 @@ public class EventFilterDefaultsManager: ObservableObject, EventFilteringOptions
     }
 }
 
-extension EventFilterDefaultsManager {
+extension EventFetchSettingsManager {
     
     public func getEKCalendar(for calendarInfo: CalendarInfo) -> EKCalendar? {
             guard let calendarID = calendarInfo.id else {
