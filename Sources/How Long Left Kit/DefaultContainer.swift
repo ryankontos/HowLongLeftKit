@@ -14,13 +14,13 @@ open class DefaultContainer: ObservableObject {
     public let eventCache: EventCache
     public let pointStore: TimePointStore
     
-    public let storedEventManager: StoredEventManager
+    public let hiddenEventManager: StoredEventManager
     
     public let timerContainer = GlobalTimerContainer()
     
     public init() {
         
-        let domainString = "app"
+        let domainString = "HowLongLeft_App"
         
         calendarReader = CalendarSource(requestCalendarAccessImmediately: true)
         
@@ -28,9 +28,9 @@ open class DefaultContainer: ObservableObject {
         let config = EventFetchSettingsManager.Configuration(domain: domainString, defaultContextsForNonMatches: appSet)
         calendarPrefsManager = EventFetchSettingsManager(calendarSource: calendarReader, config: config)
         
-        storedEventManager = StoredEventManager(domain: domainString)
+        hiddenEventManager = StoredEventManager(domain: "\(domainString)_HiddenEvents")
         
-        eventCache = EventCache(calendarReader: calendarReader, calendarProvider: calendarPrefsManager, calendarContexts: [HLLStandardCalendarContexts.app.rawValue], storedEventManager: storedEventManager)
+        eventCache = EventCache(calendarReader: calendarReader, calendarProvider: calendarPrefsManager, calendarContexts: [HLLStandardCalendarContexts.app.rawValue], hiddenEventManager: hiddenEventManager)
         pointStore = TimePointStore(eventCache: eventCache)
         
         

@@ -13,12 +13,12 @@ public class EventCache: ObservableObject {
     
     private var eventCache: [Event]?
     
-    private let calendarReader: CalendarSource
+    private weak var calendarReader: CalendarSource?
     private var stale = false
     
     
     private var eventStoreSubscription: AnyCancellable?
-    private var storedEventManagerSubscription: AnyCancellable?
+    private var hiddenEventManagerSubscription: AnyCancellable?
     private var calendarPrefsSubscription: AnyCancellable?
     
     private var calendarContexts: Set<String>
@@ -29,23 +29,23 @@ public class EventCache: ObservableObject {
         }
     }
     
-    private weak var storedEventManager: StoredEventManager? {
+    private weak var hiddenEventManager: StoredEventManager? {
         didSet {
-            setupStoredEventManagerSubscription()
+            setupHiddenEventManagerSubscription()
         }
     }
     
-    public init(calendarReader: CalendarSource, calendarProvider: any EventFilteringOptionsProvider, calendarContexts: Set<String>, storedEventManager: StoredEventManager) {
+    public init(calendarReader: CalendarSource?, calendarProvider: any EventFilteringOptionsProvider, calendarContexts: Set<String>, hiddenEventManager: StoredEventManager) {
         self.calendarReader = calendarReader
         self.calendarProvider = calendarProvider
         self.calendarContexts = calendarContexts
-        self.storedEventManager = storedEventManager
+        self.hiddenEventManager = hiddenEventManager
         setupEventStoreSubscription()
         setupCalendarsSubscription()
-        setupStoredEventManagerSubscription()
+        setupHiddenEventManagerSubscription()
         updateEvents()
         
-        while calendarReader.authorization == .notDetermined { }
+        while calendarReader?.authorization == .notDetermined { }
         
     }
     
@@ -57,21 +57,21 @@ public class EventCache: ObservableObject {
         calendarPrefsSubscription = calendarProvider.objectWillChange
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                //print("Cals changed")
+                
                 self?.updateEvents()
             }
             
     }
     
-    private func setupStoredEventManagerSubscription() {
+    private func setupHiddenEventManagerSubscription() {
         
-        guard let storedEventManager else { return }
-        storedEventManagerSubscription?.cancel()
-        storedEventManagerSubscription = nil
-        storedEventManagerSubscription = storedEventManager.objectWillChange
+        guard let hiddenEventManager else { return }
+        hiddenEventManagerSubscription?.cancel()
+        hiddenEventManagerSubscription = nil
+        hiddenEventManagerSubscription = hiddenEventManager.objectWillChange
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                //print("Cals changed")
+               
                 self?.updateEvents()
             }
             
@@ -80,10 +80,12 @@ public class EventCache: ObservableObject {
     
     private func setupEventStoreSubscription() {
         
+        guard let reader = calendarReader else { return }
+        
         self.eventStoreSubscription?.cancel()
         self.eventStoreSubscription = nil
         
-        eventStoreSubscription = NotificationCenter.default.publisher(for: .EKEventStoreChanged, object: calendarReader.eventStore)
+        eventStoreSubscription = NotificationCenter.default.publisher(for: .EKEventStoreChanged, object: reader.eventStore)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.calendarProvider?.updateForNewCals()
@@ -106,6 +108,8 @@ public class EventCache: ObservableObject {
             return
         }
         
+        guard let calendarReader = self.calendarReader else { return }
+        
         var foundChanges = false
         let oldCache = eventCache
         var newEventCache = [Event]()
@@ -115,23 +119,19 @@ public class EventCache: ObservableObject {
         
         for ekEvent in newEvents {
             
-            let eventInfo = storedEventManager!.fetchEventInfo(matching: ekEvent.eventIdentifier)
-            
-            if let eventInfo {
-                print("Found event info")
-                if eventInfo.isHidden {
-                    foundChanges = true
+            if let hiddenEventManager {
+                if hiddenEventManager.isEventStoredWith(eventID: ekEvent.eventIdentifier) {
                     continue
                 }
             }
             
             if var existingMatch = oldCache?.first(where: { ekEvent.id == $0.id }) {
-                let changes = updateEvent(Event: &existingMatch, from: ekEvent, eventInfo: eventInfo)
+                let changes = updateEvent(Event: &existingMatch, from: ekEvent)
                 if changes { foundChanges = true }
                 newEventCache.append(existingMatch)
             } else {
                 foundChanges = true
-                newEventCache.append(Event(event: ekEvent, eventInfo: eventInfo))
+                newEventCache.append(Event(event: ekEvent))
             }
         }
         
@@ -148,24 +148,22 @@ public class EventCache: ObservableObject {
         }
     }
     
-    private func updateEvent(Event: inout Event, from ekEvent: EKEvent, eventInfo: EventInfo?) -> Bool {
+    private func updateEvent(Event: inout Event, from ekEvent: EKEvent) -> Bool {
         
         var changes = false
-        
-        if let eventInfo {
-            updateIfNeeded(&Event.isHidden, compareTo: eventInfo.isHidden, flag: &changes)
-            updateIfNeeded(&Event.isPinned, compareTo: eventInfo.isPinned, flag: &changes)
-        }
-        
+     
         updateIfNeeded(&Event.title, compareTo: ekEvent.title, flag: &changes)
         updateIfNeeded(&Event.startDate, compareTo: ekEvent.startDate, flag: &changes)
         updateIfNeeded(&Event.endDate, compareTo: ekEvent.endDate, flag: &changes)
-        updateIfNeeded(&Event.calId, compareTo: ekEvent.calendar.calendarIdentifier, flag: &changes)
+        updateIfNeeded(&Event.calendarID, compareTo: ekEvent.calendar.calendarIdentifier, flag: &changes)
         updateIfNeeded(&Event.structuredLocation, compareTo: ekEvent.structuredLocation, flag: &changes)
         return changes
     }
     
     deinit {
+        
+        print("Eventcache deinit")
+        
         eventStoreSubscription?.cancel()
         eventStoreSubscription = nil
         

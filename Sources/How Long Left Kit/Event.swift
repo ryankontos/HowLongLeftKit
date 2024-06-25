@@ -14,13 +14,12 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
     @Published public var startDate: Date
     @Published public var endDate: Date
     
-    @Published public var calId: String
+    @Published public var calendarID: String
     
     @Published public var isAllDay: Bool
     
     @Published public var structuredLocation: EKStructuredLocation?
     
-    @Published internal(set) public var isHidden: Bool = false
     @Published internal(set) public var isPinned: Bool = false
     
     public var locationName: String? {
@@ -31,24 +30,20 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
         return structuredLocation?.geoLocation
     }
     
-    public var eventIdentifier: String
+    public var eventID: String
     
     public var id: String
     
-    init(event: EKEvent, eventInfo: EventInfo?) {
+    init(event: EKEvent) {
         self.title = event.title.trimmingCharacters(in: .whitespacesAndNewlines)
         self.startDate = event.startDate
         self.endDate = event.endDate
         self.id = event.id
-        self.eventIdentifier = event.eventIdentifier
-        self.calId = event.calendar?.calendarIdentifier ?? "Nil"
+        self.eventID = event.eventIdentifier
+        self.calendarID = event.calendar?.calendarIdentifier ?? "Nil"
         self.isAllDay = event.isAllDay
         self.structuredLocation = event.structuredLocation
-        
-        if let eventInfo = eventInfo {
-            self.isHidden = eventInfo.isHidden
-            self.isPinned = eventInfo.isPinned
-        }
+       
         
     }
     
@@ -57,11 +52,10 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
         self.startDate = start
         self.endDate = end
         self.id = title
-        self.calId = "none"
+        self.calendarID = "none"
         self.isAllDay = isAllDay
-        self.isHidden = false
         self.isPinned = false
-        self.eventIdentifier = "none"
+        self.eventID = "none"
     }
     
     public func countdownDate(at date: Date = Date()) -> Date {
@@ -103,3 +97,16 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
 
 
 
+
+public protocol EventInfoProtocol {
+    
+    var title: String { get set }
+    var startDate: Date { get set }
+    var endDate: Date { get set }
+    var isAllDay: Bool { get set }
+    var calendarID: String { get set }
+    var eventID: String { get set }
+    var isHidden: Bool { get }
+    var isPinned: Bool { get }
+    
+}

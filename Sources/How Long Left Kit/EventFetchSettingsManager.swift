@@ -3,6 +3,7 @@ import Defaults
 import Combine
 import EventKit
 import CoreData
+import os.log
 
 public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsProvider {
   
@@ -29,13 +30,19 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
     private var domainObject: CalendarStorageDomain?
     private var cancellables: Set<AnyCancellable> = []
     
-    init(calendarSource: CalendarSource, config: Configuration) {
+    private let logger: Logger
+    
+    public init(calendarSource: CalendarSource, config: Configuration) {
         self.configuration = config
         self.calendarSource = calendarSource
+        
+        self.logger = Logger(subsystem: "howlongleftmac.eventfetchsettingsmanager", category: "\(config.domain)")
+        
         fetchOrCreateDomainObject()
         syncCalendarsWithDomain()
         updateCalendarItems()
         updateSubscriptions()
+        
         
         Task {
             for await _ in Defaults.updates(config.allowAllDayKey) {
@@ -44,6 +51,8 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
                 }
             }
         }
+        
+        
         
     }
     
@@ -116,9 +125,11 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
             let allCalendars = calendarSource.eventStore.calendars(for: .event)
             let allowedCalendarIds = Set(allCalendars.map { $0.calendarIdentifier })
             
-            let validCalendarInfos = existingCalendarInfos.filter { allowedCalendarIds.contains($0.id ?? "") }
+            var validCalendarInfos = existingCalendarInfos.filter { allowedCalendarIds.contains($0.id ?? "") }
+            validCalendarInfos.sort { $0.title ?? "" < $1.title ?? "" }
             self.calendarItems = validCalendarInfos
             updateSubscriptions()
+            
         } catch {
             handleError(error, message: "Error updating calendar items")
         }
@@ -201,7 +212,7 @@ extension EventFetchSettingsManager {
         return contexts.contains { $0.id == contextID }
     }
     
-    public func updateContexts(for calendarInfo: CalendarInfo, addContextIDs: Set<String>? = nil, removeContextIDs: Set<String>? = nil) {
+    public func updateContexts(for calendarInfo: CalendarInfo, addContextIDs: Set<String>? = nil, removeContextIDs: Set<String>? = nil, notify: Bool = false) {
         guard self.domainObject != nil else { return }
 
         // Determine the contexts to actually add and remove, avoiding conflicts
@@ -236,8 +247,42 @@ extension EventFetchSettingsManager {
             }
         }
         
-        saveContext()
-        updateCalendarItems()
+       
+        
+        if notify {
+           
+               
+                self.saveContext()
+                self.updateCalendarItems()
+              //  print("Sending object will change for update update")
+              
+                self.objectWillChange.send()
+                
+            
+        }
+        
+    }
+    
+    public func batchUpdateContexts(addContextIDs: Set<String>? = nil, removeContextIDs: Set<String>? = nil) {
+        
+        for item in self.calendarItems {
+            
+            updateContexts(for: item, addContextIDs: addContextIDs, removeContextIDs: removeContextIDs, notify: false)
+            
+        }
+        
+        print("Batch updated contetxts")
+        
+     
+            
+            self.saveContext()
+            self.updateCalendarItems()
+           // print("Sending object will change for batch update")
+            self.objectWillChange.send()
+            
+        
+            
+        
     }
 
 

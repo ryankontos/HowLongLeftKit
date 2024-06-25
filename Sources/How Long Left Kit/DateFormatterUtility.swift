@@ -13,22 +13,34 @@ public class DateFormatterUtility {
     
     
     public func getEventIntervalString(event: Event, newLineForEnd: Bool) -> String {
+        return getIntervalString(start: event.startDate, end: event.endDate, isAllDay: event.isAllDay, newLineForEnd: newLineForEnd)
+    }
+    
+    public func getIntervalString(start: Date, end: Date, isAllDay: Bool, newLineForEnd: Bool) -> String {
         
-        if event.isAllDay {
-            let start = formattedDateString(event.startDate, allowRelative: true)
-            let end = formattedDateString(event.endDate, allowRelative: true)
+        if isAllDay {
+            let start = formattedDateString(start, allowRelative: true)
+            let end = formattedDateString(end, allowRelative: true)
             
             return "\(start) - \(end)"
             
         }
         
-        let startDate = formattedDateString(event.startDate, allowRelative: true)
-        let startTime = formattedTimeString(event.startDate)
+        let startDate = formattedDateString(start, allowRelative: true)
+        let startTime = formattedTimeString(start)
         
-        let endDate = formattedDateString(event.endDate, allowRelative: true)
-        let endTime = formattedTimeString(event.endDate)
+        let endDate = formattedDateString(end, allowRelative: true)
+        let endTime = formattedTimeString(end)
         
-        return "\(startDate), \(startTime) -\(newLineForEnd ? "\n" : "")\(endDate != startDate ? "\(endDate) ," : "")\(endTime)"
+        return "\(startDate), \(startTime) -\(newLineForEnd ? "\n" : " ")\(endDate != startDate ? "\(endDate) ," : "")\(endTime)"
+        
+    }
+    
+    public func formattedDateTimeString(_ date: Date, allowRelativeDate: Bool = true) -> String {
+        
+        let dateString = formattedDateString(date, allowRelative: allowRelativeDate)
+        let timeString = formattedTimeString(date)
+        return "\(dateString), \(timeString)"
         
     }
     

@@ -12,59 +12,58 @@ public class StoredEventManager: ObservableObject {
     
     let context = HLLPersistenceController.shared.viewContext
     
-    private var domainObject: EventInfoStorageDomain?
+    private var domainObject: EventStorageDomain?
     
     private var domain: String = ""
     
     init(domain: String) {
         self.domain = domain
         fetchOrCreateDomainObject()
+        
     }
     
-   public func setEventHidden(event: Event, hidden: Bool) {
+    public func removeEventFromStore(eventInfo: StoredEventInfo) {
+       
+        deleteEventInfo(matching: eventInfo.eventID)
+        
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
+        }
+        
+    }
+    
+    public func addEventToStore(event: Event) {
+        createEventInfo(with: event)
+        
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
+        }
+    }
+    
+    public func getAllStoredEvents() -> [StoredEventInfo] {
+        guard let domainObject else { return [] }
+        
+        let fetchRequest: NSFetchRequest<StoredEventInfo> = StoredEventInfo.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "domain == %@", domainObject)
         
         do {
-            let eventInfo = try fetchOrCreateEventInfo(matching: event.eventIdentifier)
-            eventInfo.isHidden = hidden
-            try self.context.save()
-            DispatchQueue.main.async {
-                self.objectWillChange.send()
-            }
+            let eventInfos = try context.fetch(fetchRequest)
+            return eventInfos
         } catch {
             fatalError(error.localizedDescription)
         }
-        
-        
     }
     
-    public func setEventPinned(event: Event, pinned: Bool) {
-        
-        do {
-            let eventInfo = try fetchOrCreateEventInfo(matching: event.eventIdentifier)
-            eventInfo.isPinned = pinned
-            try self.context.save()
-            DispatchQueue.main.async {
-                self.objectWillChange.send()
-            }
-        } catch {
-            
-        }
-        
-        
+    func isEventStored(event: Event) -> Bool {
+        return isEventStoredWith(eventID: event.eventID)
     }
     
-    func isEventHidden(eventId: String) -> Bool {
-        guard let object = try? fetchOrCreateEventInfo(matching: eventId) else { return false }
-        return object.isHidden
-    }
-    
-    func isEventPinned(eventId: String) -> Bool {
-        guard let object = try? fetchOrCreateEventInfo(matching: eventId) else { return false }
-        return object.isPinned
+    func isEventStoredWith(eventID: String) -> Bool {
+        return fetchEventInfo(matching: eventID) != nil
     }
     
     private func fetchOrCreateDomainObject() {
-        let fetchRequest: NSFetchRequest<EventInfoStorageDomain> = EventInfoStorageDomain.fetchRequest()
+        let fetchRequest: NSFetchRequest<EventStorageDomain> = EventStorageDomain.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "domainID == %@", domain)
         
         do {
@@ -72,33 +71,61 @@ public class StoredEventManager: ObservableObject {
             if let existingDomain = results.first {
                 self.domainObject = existingDomain
             } else {
-                let newDomain = EventInfoStorageDomain(context: self.context)
+                let newDomain = EventStorageDomain(context: self.context)
                 newDomain.domainID = domain
                 self.domainObject = newDomain
                 try self.context.save()
             }
         } catch {
-           // handleError(error, message: "Error fetching or saving domain object")
+            fatalError(error.localizedDescription)
         }
     }
     
-    // Fetch or create EventInfo
-    func fetchOrCreateEventInfo(matching eventID: String) throws -> EventInfo {
-        if let eventInfo = fetchEventInfo(matching: eventID) {
-            return eventInfo
-        } else {
-            return createEventInfo(with: eventID)
+    func purge() {
+        guard let items = domainObject?.eventInfos as? [StoredEventInfo] else { return }
+        
+        for info in items {
+            context.delete(info)
+        }
+        
+        try? context.save()
+    }
+    
+    // Create HiddenEventInfo
+    private func createEventInfo(with event: Event) {
+        
+        let newHiddenEventInfo = StoredEventInfo(context: context)
+        newHiddenEventInfo.eventID = event.eventID
+        newHiddenEventInfo.domain = domainObject
+        newHiddenEventInfo.title = event.title
+        newHiddenEventInfo.calendarID = event.calendarID
+        newHiddenEventInfo.startDate = event.startDate
+        newHiddenEventInfo.endDate = event.endDate
+        newHiddenEventInfo.isAllDay = event.isAllDay
+        newHiddenEventInfo.domain = domainObject
+        
+        
+        domainObject?.addToEventInfos(newHiddenEventInfo)
+        
+        context.insert(newHiddenEventInfo)
+        
+        do {
+            try context.save()
+        } catch {
+            print("Failed to save new HiddenEventInfo: \(error)")
         }
     }
     
-    // Fetch EventInfo matching the eventID
-    func fetchEventInfo(matching eventID: String) -> EventInfo? {
+    // Fetch HiddenEventInfo matching the eventID
+    func fetchEventInfo(matching eventId: String?) -> StoredEventInfo? {
+        
+        guard let eventId else { return nil }
         
         guard let domainObject else { return nil }
         
-        let fetchRequest: NSFetchRequest<EventInfo> = EventInfo.fetchRequest()
+        let fetchRequest: NSFetchRequest<StoredEventInfo> = StoredEventInfo.fetchRequest()
         fetchRequest.fetchLimit = 1
-        fetchRequest.predicate = NSPredicate(format: "domain == %@ AND eventID == %@", domainObject, eventID)
+        fetchRequest.predicate = NSPredicate(format: "domain == %@ AND eventID == %@", domainObject, eventId)
         
         do {
             let eventInfos = try context.fetch(fetchRequest)
@@ -107,27 +134,16 @@ public class StoredEventManager: ObservableObject {
             fatalError(error.localizedDescription)
         }
     }
-
-    // Create a new EventInfo
-    func createEventInfo(with eventID: String) -> EventInfo {
-        let newEventInfo = EventInfo(context: context)
-        newEventInfo.eventID = eventID
-        newEventInfo.domain = domainObject
-        domainObject!.addToEventInfos(newEventInfo)
-        
-        print("Creating event info")
+    
+    // Delete HiddenEventInfo
+    func deleteEventInfo(matching eventId: String?) {
+        guard let hiddenEventInfo = fetchEventInfo(matching: eventId) else { return }
+        context.delete(hiddenEventInfo)
         
         do {
             try context.save()
         } catch {
-            print("Failed to save new EventInfo: \(error)")
+            print("Failed to delete HiddenEventInfo: \(error)")
         }
-        
-        return newEventInfo
     }
-
-    
-    
-
-    
 }

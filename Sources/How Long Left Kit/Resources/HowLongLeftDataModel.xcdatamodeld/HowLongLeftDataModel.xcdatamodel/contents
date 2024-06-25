@@ -15,14 +15,17 @@
         <attribute name="showAllDayEvents" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <relationship name="calendarInfos" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="CalendarInfo" inverseName="domain" inverseEntity="CalendarInfo"/>
     </entity>
-    <entity name="EventInfo" representedClassName="EventInfo" syncable="YES" codeGenerationType="class">
-        <attribute name="eventID" optional="YES" attributeType="String"/>
-        <attribute name="isHidden" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
-        <attribute name="isPinned" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
-        <relationship name="domain" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="EventInfoStorageDomain" inverseName="eventInfos" inverseEntity="EventInfoStorageDomain"/>
-    </entity>
-    <entity name="EventInfoStorageDomain" representedClassName="EventInfoStorageDomain" syncable="YES" codeGenerationType="class">
+    <entity name="EventStorageDomain" representedClassName="EventStorageDomain" syncable="YES" codeGenerationType="class">
         <attribute name="domainID" optional="YES" attributeType="String"/>
-        <relationship name="eventInfos" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="EventInfo" inverseName="domain" inverseEntity="EventInfo"/>
+        <relationship name="eventInfos" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="StoredEventInfo" inverseName="domain" inverseEntity="StoredEventInfo"/>
+    </entity>
+    <entity name="StoredEventInfo" representedClassName="StoredEventInfo" syncable="YES" codeGenerationType="class">
+        <attribute name="calendarID" optional="YES" attributeType="String"/>
+        <attribute name="endDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="eventID" optional="YES" attributeType="String"/>
+        <attribute name="isAllDay" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="startDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="domain" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="EventStorageDomain" inverseName="eventInfos" inverseEntity="EventStorageDomain"/>
     </entity>
 </model>
