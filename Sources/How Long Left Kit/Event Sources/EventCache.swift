@@ -35,7 +35,10 @@ public class EventCache: ObservableObject {
         }
     }
     
-    public init(calendarReader: CalendarSource?, calendarProvider: any EventFilteringOptionsProvider, calendarContexts: Set<String>, hiddenEventManager: StoredEventManager) {
+    public var id: String
+    
+    public init(calendarReader: CalendarSource?, calendarProvider: any EventFilteringOptionsProvider, calendarContexts: Set<String>, hiddenEventManager: StoredEventManager, id: String) {
+        self.id = id
         self.calendarReader = calendarReader
         self.calendarProvider = calendarProvider
         self.calendarContexts = calendarContexts
@@ -44,6 +47,8 @@ public class EventCache: ObservableObject {
         setupCalendarsSubscription()
         setupHiddenEventManagerSubscription()
         updateEvents()
+        
+        
         
         while calendarReader?.authorization == .notDetermined { }
         

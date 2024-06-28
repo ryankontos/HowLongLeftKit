@@ -30,7 +30,7 @@ open class DefaultContainer: ObservableObject {
         
         hiddenEventManager = StoredEventManager(domain: "\(domainString)_HiddenEvents")
         
-        eventCache = EventCache(calendarReader: calendarReader, calendarProvider: calendarPrefsManager, calendarContexts: [HLLStandardCalendarContexts.app.rawValue], hiddenEventManager: hiddenEventManager)
+        eventCache = EventCache(calendarReader: calendarReader, calendarProvider: calendarPrefsManager, calendarContexts: [HLLStandardCalendarContexts.app.rawValue], hiddenEventManager: hiddenEventManager, id: "DefaultContainer")
         pointStore = TimePointStore(eventCache: eventCache)
         
         

@@ -7,10 +7,13 @@
 
 import Foundation
 import Combine
+import os.log
 
 public class TimePointStore: EventCacheObserver, ObservableObject {
     
     private let pointGen = TimePointGenerator(groupingMode: .countdownDate)
+    
+    lazy var logger = Logger(subsystem: "HowLongLeftMac", category: "TimePointStore.\(self.eventCache.id)")
     
     var points: [TimePoint]?
     var updateTimer: Timer?
@@ -20,8 +23,10 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
     }
     
     override public init(eventCache: EventCache) {
+       
         super.init(eventCache: eventCache)
         updatePoints()
+        logger.info("Init TimePointStore")
         
     }
     
@@ -30,8 +35,9 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
     }
     
     public func getPointAt(date: Date) -> TimePoint? {
-        let p = points?.last(where: { $0.date < date })
-        return p
+        let point = points?.last(where: { $0.date < date })
+        if point == nil { return points?.first }
+        return point
     }
     
     private func updatePoints() {
@@ -42,6 +48,8 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
         var newResult = [TimePoint]()
         var foundChanges = false
         let events = eventCache.getEvents()
+        
+        logger.info("Updating points got \(events.count)")
         
         //print("Updating points got \(events.count)")
         
@@ -61,6 +69,7 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
         if newResult != oldpoints { foundChanges = true }
         
         if foundChanges {
+            logger.info("Setting points to array with \(newResult.count)")
             self.points = newResult
             DispatchQueue.main.async {
                 self.objectWillChange.send()
@@ -78,6 +87,7 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
                 updateTimer = Timer.scheduledTimer(withTimeInterval: nextUpdateTime.timeIntervalSince(now), repeats: false) { [weak self] _ in
                     self?.updatePoints()
                 }
+                RunLoop.main.add(updateTimer!, forMode: .common)
             }
         }
     }
