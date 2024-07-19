@@ -10,9 +10,11 @@ import Foundation
 class TimePointGenerator {
     
     private var groupMode: GroupMode
+    private var includeMultiDayEvents: Bool
     
-    init(groupingMode: GroupMode) {
+    init(groupingMode: GroupMode, includeMultiDayEvents: Bool = true) {
         self.groupMode = groupingMode
+        self.includeMultiDayEvents = includeMultiDayEvents
     }
     
     func generateTimePoints(for events: [Event]) -> [TimePoint] {
@@ -53,7 +55,6 @@ class TimePointGenerator {
         var eventDictionary = [Date: [Event]]()
         
         for event in events {
-            
             var groupUsing: Date
             
             switch by {
@@ -63,11 +64,27 @@ class TimePointGenerator {
                 groupUsing = event.countdownDate(at: date)
             }
             
-            let startOfDay = Calendar.current.startOfDay(for: groupUsing)
-            if eventDictionary[startOfDay] != nil {
-                eventDictionary[startOfDay]?.append(event)
+            if includeMultiDayEvents {
+                let calendar = Calendar.current
+                let startOfDay = calendar.startOfDay(for: groupUsing)
+                let endOfDay = calendar.startOfDay(for: event.endDate)
+                var currentDate = startOfDay
+                
+                while currentDate <= endOfDay {
+                    if eventDictionary[currentDate] != nil {
+                        eventDictionary[currentDate]?.append(event)
+                    } else {
+                        eventDictionary[currentDate] = [event]
+                    }
+                    currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
+                }
             } else {
-                eventDictionary[startOfDay] = [event]
+                let startOfDay = Calendar.current.startOfDay(for: groupUsing)
+                if eventDictionary[startOfDay] != nil {
+                    eventDictionary[startOfDay]?.append(event)
+                } else {
+                    eventDictionary[startOfDay] = [event]
+                }
             }
         }
         

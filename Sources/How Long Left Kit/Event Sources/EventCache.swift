@@ -107,7 +107,7 @@ public class EventCache: ObservableObject {
     
     private func updateEvents() {
         
-        print("Updating events")
+        //print("Updating events")
             
         guard let calendarProvider else {
             return
