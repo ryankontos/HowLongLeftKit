@@ -31,24 +31,24 @@ public class EventListGroupProvider {
             
             return point.allGroupedByCountdownDate.compactMap {
                 
-                TitledEventGroup.makeGroup(title: "\(dateFormatter.formattedDateString($0.date, allowRelative: true))", events: $0.events, makeIfEmpty: listSettings.showEmptyUpcomingDays)
-                
+                TitledEventGroup.makeGroup(title: "\(dateFormatter.formattedDateString($0.date, allowRelative: true))", info: dateFormatter.getDaysAwayString(from: $0.date, at: Date()), events: $0.events, makeIfEmpty: listSettings.showEmptyUpcomingDays)
                 
             }
             
         }
         
+        
         var onNowGroup: TitledEventGroup?
         
         if listSettings.showInProgress {
-            onNowGroup = TitledEventGroup.makeGroup(title: "On Now", events: point.inProgressEvents, makeIfEmpty: listSettings.showInProgressWhenEmpty)
+            onNowGroup = TitledEventGroup.makeGroup(title: "On Now", info: nil, events: point.inProgressEvents, makeIfEmpty: listSettings.showInProgressWhenEmpty)
         }
         
         var upcomingGrouped: [TitledEventGroup]?
         
         if listSettings.showUpcoming {
             upcomingGrouped = point.upcomingGroupedByStart.map {
-                TitledEventGroup("\(dateFormatter.formattedDateString($0.date, allowRelative: true))", $0.events)
+                TitledEventGroup("\(dateFormatter.formattedDateString($0.date, allowRelative: true))", dateFormatter.getDaysAwayString(from: $0.date, at: Date()),$0.events)
             }
         }
         
