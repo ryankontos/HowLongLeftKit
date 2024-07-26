@@ -8,8 +8,11 @@
 import Foundation
 import EventKit
 import Combine
+import os.log
 
 public class EventCache: ObservableObject {
+    
+    let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "EventCache")
     
     private var eventCache: [Event]?
     
@@ -106,9 +109,11 @@ public class EventCache: ObservableObject {
     }
     
     private func updateEvents() {
+        // Record start time
+        let startTime = Date()
         
         //print("Updating events")
-            
+        
         guard let calendarProvider else {
             return
         }
@@ -120,10 +125,8 @@ public class EventCache: ObservableObject {
         var newEventCache = [Event]()
         let newEvents = calendarReader.getEvents(from: calendarProvider.getAllowedCalendars(matchingContextIn: calendarContexts))
             .filter { event in calendarProvider.getAllDayAllowed() || !event.isAllDay }
-
         
         for ekEvent in newEvents {
-            
             if let hiddenEventManager {
                 if hiddenEventManager.isEventStoredWith(eventID: ekEvent.eventIdentifier) {
                     continue
@@ -144,14 +147,20 @@ public class EventCache: ObservableObject {
         stale = false
         
         if foundChanges {
-            
-                self.eventCache = newEventCache
+            self.eventCache = newEventCache
             DispatchQueue.main.async {
                 self.objectWillChange.send()
             }
-            
         }
+        
+        // Record end time
+        let endTime = Date()
+        let timeInterval = endTime.timeIntervalSince(startTime)
+        
+        // Print duration
+        print("Time taken to update events: \(timeInterval) seconds")
     }
+
     
     private func updateEvent(Event: inout Event, from ekEvent: EKEvent) -> Bool {
         

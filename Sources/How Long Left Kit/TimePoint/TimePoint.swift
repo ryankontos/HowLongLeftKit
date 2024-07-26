@@ -14,6 +14,10 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
     @Published public var inProgressEvents: [Event]
     @Published public var upcomingEvents: [Event]
     
+    public var allEvents: [Event] {
+        return inProgressEvents + upcomingEvents
+    }
+    
     @Published public var allGroupedByCountdownDate: [EventDate]
     @Published public var upcomingGroupedByStart: [EventDate]
     
@@ -49,13 +53,16 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
             let nextUpcomingEvent = upcomingEvents.first
             let nextInProgressEvent = inProgressEvents.first
             
-            if let upcoming = nextUpcomingEvent, let inProgress = nextInProgressEvent {
-                let upcomingStartDistance = upcoming.startDate.distance(to: date)
-                let inProgressEndDistance = date.distance(to: inProgress.endDate)
-                return upcomingStartDistance < inProgressEndDistance ? upcoming : inProgress
-            } else {
-                return nextUpcomingEvent ?? nextInProgressEvent
+            if let nextUpcomingEvent = nextUpcomingEvent, let nextInProgressEvent = nextInProgressEvent {
+                return nextUpcomingEvent.countdownDate(at: date) < nextInProgressEvent.countdownDate(at: date) ? nextUpcomingEvent : nextInProgressEvent
             }
+            
+            return nextUpcomingEvent ?? nextInProgressEvent
+            
+           // Finish implementing
+            
+        case .noEvents:
+            return nil
         }
     }
     
@@ -71,12 +78,12 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
 
 }
 
-public enum SingleEventFetchRule {
+public enum SingleEventFetchRule: Int {
     
-    case upcomingOnly // Return only the next to start event
-    case inProgressOnly // Return only the next event to end, that is currently in progress
-    case preferUpcoming // Return the next event to start. If there is not one, return the next in progress event to end
-    case preferInProgress // Return the next in progress event to end, if there is not one, return the next upcoming event to start
-    case soonestCountdownDate // Return either an in progress or an upcoming event, whichever is closest to either starting or ending (if it is in progress)
-    
+    case upcomingOnly = 0 // Return only the next to start event
+    case inProgressOnly = 1 // Return only the next event to end, that is currently in progress
+    case preferUpcoming = 2 // Return the next event to start. If there is not one, return the next in progress event to end
+    case preferInProgress = 3 // Return the next in progress event to end, if there is not one, return the next upcoming event to start
+    case soonestCountdownDate = 4 // Return either an in progress or an upcoming event, whichever is closest to either starting or ending (if it is in progress)
+    case noEvents = 5
 }

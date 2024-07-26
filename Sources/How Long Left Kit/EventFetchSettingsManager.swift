@@ -23,8 +23,8 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
     
     static let context = HLLPersistenceController.shared.viewContext
 
-    @Published public var configuration: Configuration
-    @Published public var calendarItems: [CalendarInfo] = []
+    public var configuration: Configuration
+    public var calendarItems: [CalendarInfo] = []
     
     private let calendarSource: CalendarSource
     private var domainObject: CalendarStorageDomain?
@@ -128,7 +128,12 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
             var validCalendarInfos = existingCalendarInfos.filter { allowedCalendarIds.contains($0.id ?? "") }
             validCalendarInfos.sort { $0.title ?? "" < $1.title ?? "" }
             self.calendarItems = validCalendarInfos
-            updateSubscriptions()
+           
+            
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+                self.updateSubscriptions()
+            }
             
         } catch {
             handleError(error, message: "Error updating calendar items")
@@ -145,9 +150,11 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
         
         calendarItems.forEach { calendarInfo in
             calendarInfo.objectWillChange
+            
                 .sink { [weak self] _ in
+                    
                     DispatchQueue.main.async {
-                        self?.calendarInfoDidChange(calendarInfo)
+                        //self?.calendarInfoDidChange(calendarInfo)
                     }
                 }
                 .store(in: &cancellables)
@@ -256,7 +263,7 @@ extension EventFetchSettingsManager {
                 self.updateCalendarItems()
               //  print("Sending object will change for update update")
               
-                self.objectWillChange.send()
+                //self.objectWillChange.send()
                 
             
         }
@@ -278,7 +285,7 @@ extension EventFetchSettingsManager {
             self.saveContext()
             self.updateCalendarItems()
            // print("Sending object will change for batch update")
-            self.objectWillChange.send()
+            //self.objectWillChange.send()
             
         
             

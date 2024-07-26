@@ -17,6 +17,13 @@ class TimePointGenerator {
         self.includeMultiDayEvents = includeMultiDayEvents
     }
     
+    func generateFirstPoint(for events: [Event]) -> TimePoint {
+        
+       
+        return generateTimePoint(for: Date(), from: events)
+        
+    }
+    
     func generateTimePoints(for events: [Event]) -> [TimePoint] {
         let now = Date()
        
@@ -45,6 +52,9 @@ class TimePointGenerator {
             }
         }
        
+        currentArray = currentArray.sortedByEndDate()
+        upcomingArray = upcomingArray.sortedByStartDate()
+        
         let grouped = groupEventsByDate(events, at: date, by: .countdownDate)
         let upcomingGroup = groupEventsByDate(upcomingArray, at: date, by: .start)
         

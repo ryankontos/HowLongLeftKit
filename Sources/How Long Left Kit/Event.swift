@@ -96,7 +96,18 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
 }
 
 
-
+public extension Array where Element == Event {
+    
+    // Function to sort by start date
+    func sortedByStartDate() -> [Event] {
+        return self.sorted { $0.startDate < $1.startDate }
+    }
+    
+    // Function to sort by end date
+    func sortedByEndDate() -> [Event] {
+        return self.sorted { $0.endDate < $1.endDate }
+    }
+}
 
 public protocol EventInfoProtocol {
     
@@ -110,3 +121,4 @@ public protocol EventInfoProtocol {
     var isPinned: Bool { get }
     
 }
+

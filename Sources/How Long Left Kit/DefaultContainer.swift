@@ -16,6 +16,8 @@ open class DefaultContainer: ObservableObject {
     
     public let hiddenEventManager: StoredEventManager
     
+    public let selectedEventManager: StoredEventManager
+    
     public let timerContainer = GlobalTimerContainer()
     
     public init() {
@@ -29,6 +31,8 @@ open class DefaultContainer: ObservableObject {
         calendarPrefsManager = EventFetchSettingsManager(calendarSource: calendarReader, config: config)
         
         hiddenEventManager = StoredEventManager(domain: "\(domainString)_HiddenEvents")
+        
+        selectedEventManager = StoredEventManager(domain: "\(domainString)_SelectedEvent", limit: 1)
         
         eventCache = EventCache(calendarReader: calendarReader, calendarProvider: calendarPrefsManager, calendarContexts: [HLLStandardCalendarContexts.app.rawValue], hiddenEventManager: hiddenEventManager, id: "DefaultContainer")
         pointStore = TimePointStore(eventCache: eventCache)

@@ -25,6 +25,7 @@
         <attribute name="eventID" optional="YES" attributeType="String"/>
         <attribute name="isAllDay" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="startDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="storedDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="title" optional="YES" attributeType="String"/>
         <relationship name="domain" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="EventStorageDomain" inverseName="eventInfos" inverseEntity="EventStorageDomain"/>
     </entity>

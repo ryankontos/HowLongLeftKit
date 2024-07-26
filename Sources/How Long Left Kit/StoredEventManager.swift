@@ -16,10 +16,12 @@ public class StoredEventManager: ObservableObject {
     
     private var domain: String = ""
     
-    init(domain: String) {
+    private var limit: Int?
+    
+    public init(domain: String, limit: Int? = nil) {
         self.domain = domain
+        self.limit = limit
         fetchOrCreateDomainObject()
-        
     }
     
     public func removeEventFromStore(eventInfo: StoredEventInfo) {
@@ -32,9 +34,25 @@ public class StoredEventManager: ObservableObject {
         
     }
     
-    public func addEventToStore(event: Event) {
+    public func addEventToStore(event: Event, removeIfExists: Bool = false) {
+        if removeIfExists {
+            if let existingEventInfo = fetchEventInfo(matching: event.eventID) {
+                removeEventFromStore(eventInfo: existingEventInfo)
+                return // Return early after removing the existing event
+            }
+        } else if isEventStored(event: event) {
+            // If removeIfExists is false and the event is already stored, return early to avoid duplicates
+            return
+        }
+
+        if let limit = limit {
+            if getAllStoredEvents().count >= limit {
+                removeOldestEvent()
+            }
+        }
+
         createEventInfo(with: event)
-        
+
         DispatchQueue.main.async {
             self.objectWillChange.send()
         }
@@ -103,7 +121,7 @@ public class StoredEventManager: ObservableObject {
         newHiddenEventInfo.endDate = event.endDate
         newHiddenEventInfo.isAllDay = event.isAllDay
         newHiddenEventInfo.domain = domainObject
-        
+        newHiddenEventInfo.storedDate = Date()
         
         domainObject?.addToEventInfos(newHiddenEventInfo)
         
@@ -144,6 +162,26 @@ public class StoredEventManager: ObservableObject {
             try context.save()
         } catch {
             print("Failed to delete HiddenEventInfo: \(error)")
+        }
+    }
+    
+    // Remove the oldest event based on storedDate
+    private func removeOldestEvent() {
+        guard let domainObject else { return }
+        
+        let fetchRequest: NSFetchRequest<StoredEventInfo> = StoredEventInfo.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "domain == %@", domainObject)
+        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "storedDate", ascending: true)]
+        fetchRequest.fetchLimit = 1
+        
+        do {
+            let oldestEventInfos = try context.fetch(fetchRequest)
+            if let oldestEventInfo = oldestEventInfos.first {
+                context.delete(oldestEventInfo)
+                try context.save()
+            }
+        } catch {
+            print("Failed to remove oldest HiddenEventInfo: \(error)")
         }
     }
 }

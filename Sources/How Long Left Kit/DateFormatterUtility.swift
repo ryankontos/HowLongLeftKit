@@ -118,8 +118,8 @@ public class DateFormatterUtility {
         // Return the appropriate string
         let val = "\(days) day" + (days == 1 ? " away" : "s away")
         
-        print("Days away string: \(val)")
-        
+       // print("Days away string: \(val)")
+       
         return val
     }
     
