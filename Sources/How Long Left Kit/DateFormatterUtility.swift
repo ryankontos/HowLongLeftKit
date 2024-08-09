@@ -64,30 +64,33 @@ public class DateFormatterUtility {
     
     public func formattedDateString(_ date: Date, allowRelative: Bool = true, includeDayOfWeek: Bool = true) -> String {
         let formatter = DateFormatter()
+        let calendar = Calendar.current
+
+        let currentYear = calendar.component(.year, from: Date())
+        let dateYear = calendar.component(.year, from: date)
         
+        // If the date is less than a week away, return the weekday name only
         if includeDayOfWeek {
-            formatter.dateFormat = "EEEE, d MMMM"
+            if calendar.isDateInToday(date) {
+                return "Today"
+            } else if calendar.isDateInTomorrow(date) {
+                return "Tomorrow"
+            } else if let daysDifference = calendar.dateComponents([.day], from: Date(), to: date).day, daysDifference > 0 && daysDifference < 7 {
+                formatter.dateFormat = "EEEE"
+                return formatter.string(from: date)
+            } else {
+                formatter.dateFormat = "EEEE, d MMMM"
+            }
         } else {
             formatter.dateFormat = "d MMMM"
         }
-        
-        let currentYear = Calendar.current.component(.year, from: Date())
-        let dateYear = Calendar.current.component(.year, from: date)
-        
+
+        // Include the year if the date is not in the current year
         if currentYear != dateYear {
             formatter.dateFormat += " yyyy"
         }
-        
+
         formatter.locale = Locale.current
-        
-        if allowRelative {
-            if Calendar.current.isDateInToday(date) {
-                return "Today"
-            } else if Calendar.current.isDateInTomorrow(date) {
-                return "Tomorrow"
-            }
-        }
-        
         return formatter.string(from: date)
     }
 

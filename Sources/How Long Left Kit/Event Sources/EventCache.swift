@@ -26,6 +26,8 @@ public class EventCache: ObservableObject {
     
     private var calendarContexts: Set<String>
     
+    let queue = DispatchQueue(label: "com.ryankontos.howlongleft_eventcachequeue")
+    
     private weak var calendarProvider: (any EventFilteringOptionsProvider)? {
         didSet {
             setupCalendarsSubscription()
@@ -158,7 +160,7 @@ public class EventCache: ObservableObject {
         let timeInterval = endTime.timeIntervalSince(startTime)
         
         // Print duration
-        print("Time taken to update events: \(timeInterval) seconds")
+        //print("Time taken to update events: \(timeInterval) seconds")
     }
 
     

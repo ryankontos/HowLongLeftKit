@@ -15,6 +15,8 @@ public struct EventCountdownText: View {
     
     @ObservedObject private var event: Event
     
+    
+    
     public init(_ event: Event) {
         
         self.event = event
@@ -27,6 +29,9 @@ public struct EventCountdownText: View {
             .monospacedDigit()
             .onAppear() {
                 infoStringGen.setPublisher(timerContainer.everySecondPublisher)
+            }
+            .transaction {
+                $0.animation = nil
             }
     }
 }

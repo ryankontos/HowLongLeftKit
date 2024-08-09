@@ -17,23 +17,31 @@ public class EventListGroupProvider {
         self.listSettings = settingsManager
     }
     
-    public func getGroups(from point: TimePoint) -> [TitledEventGroup] {
+    public func getGroups(from point: TimePoint, selected: Event?) -> [TitledEventGroup] {
         
         var groups = [TitledEventGroup]()
+        
+        if let selected {
+            groups.append(TitledEventGroup.makeGroup(title: "Pinned", info: nil, events: [selected], makeIfEmpty: true)!)
+        }
+        
+       
         
         let mode = listSettings.sortMode
         
         if !listSettings.showInProgress && !listSettings.showUpcoming {
-            return []
+            return groups
         }
         
         if mode == .chronological {
             
-            return point.allGroupedByCountdownDate.compactMap {
+            let pointGroups = point.allGroupedByCountdownDate.compactMap {
                 
                 TitledEventGroup.makeGroup(title: "\(dateFormatter.formattedDateString($0.date, allowRelative: true))", info: dateFormatter.getDaysAwayString(from: $0.date, at: Date()), events: $0.events, makeIfEmpty: listSettings.showEmptyUpcomingDays)
                 
             }
+            
+            return groups + pointGroups
             
         }
         
@@ -41,7 +49,7 @@ public class EventListGroupProvider {
         var onNowGroup: TitledEventGroup?
         
         if listSettings.showInProgress {
-            onNowGroup = TitledEventGroup.makeGroup(title: "On Now", info: nil, events: point.inProgressEvents, makeIfEmpty: listSettings.showInProgressWhenEmpty)
+            onNowGroup = TitledEventGroup.makeGroup(title: "In Progress", info: nil, events: point.inProgressEvents, makeIfEmpty: listSettings.showInProgressWhenEmpty)
         }
         
         var upcomingGrouped: [TitledEventGroup]?

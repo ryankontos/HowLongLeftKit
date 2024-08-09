@@ -72,7 +72,7 @@ public class StoredEventManager: ObservableObject {
         }
     }
     
-    func isEventStored(event: Event) -> Bool {
+    public func isEventStored(event: Event) -> Bool {
         return isEventStoredWith(eventID: event.eventID)
     }
     

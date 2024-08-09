@@ -26,7 +26,7 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
        
         super.init(eventCache: eventCache)
         updatePoints()
-        logger.info("Init TimePointStore")
+      //  logger.info("Init TimePointStore")
         
     }
     
@@ -49,7 +49,7 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
         var foundChanges = false
         let events = eventCache.getEvents()
         
-        logger.info("Updating points got \(events.count)")
+      //  logger.info("Updating points got \(events.count)")
         
         //print("Updating points got \(events.count)")
         
@@ -69,7 +69,7 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
         if newResult != oldpoints { foundChanges = true }
         
         if foundChanges {
-            logger.info("Setting points to array with \(newResult.count)")
+           // logger.info("Setting points to array with \(newResult.count)")
             self.points = newResult
             DispatchQueue.main.async {
                 self.objectWillChange.send()

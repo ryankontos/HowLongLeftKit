@@ -10,6 +10,10 @@ import Combine
 
 public class GlobalTimerContainer: ObservableObject {
     
-    public let everySecondPublisher = Timer.publish(every: 1.0, on: .main, in: .common).autoconnect().map { _ in () }.eraseToAnyPublisher()
+    public init() {
+        
+    }
+    
+    public let everySecondPublisher = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect().map { _ in () }.eraseToAnyPublisher()
     
 }
