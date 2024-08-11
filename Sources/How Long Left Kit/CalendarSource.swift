@@ -50,8 +50,9 @@ public class CalendarSource: ObservableObject {
         
         //print("Get events from \(calendars.count) calendars")
         
-        let start = Date()
-        let end = Calendar.current.date(byAdding: .day, value: 14, to: start)!
+        let now = Date()
+        let start = Calendar.current.date(byAdding: .day, value: -2, to: now)!
+        let end = Calendar.current.date(byAdding: .day, value: 14, to: now)!
         
         let request = eventStore.predicateForEvents(withStart: start, end: end, calendars: calendars)
         let events = eventStore.events(matching: request)

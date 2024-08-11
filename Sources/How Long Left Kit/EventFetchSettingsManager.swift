@@ -43,7 +43,6 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
         updateCalendarItems()
         updateSubscriptions()
         
-        
         Task {
             for await _ in Defaults.updates(config.allowAllDayKey) {
                 DispatchQueue.main.async {
@@ -51,8 +50,6 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
                 }
             }
         }
-        
-        
         
     }
     
@@ -148,17 +145,17 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
         cancellables.forEach { $0.cancel() }
         cancellables.removeAll()
         
-        calendarItems.forEach { calendarInfo in
+       /* calendarItems.forEach { calendarInfo in
             calendarInfo.objectWillChange
             
-                .sink { [weak self] _ in
+                .sink { [ _ in
                     
                     DispatchQueue.main.async {
                         //self?.calendarInfoDidChange(calendarInfo)
                     }
                 }
                 .store(in: &cancellables)
-        }
+        } */
     }
     
     private func calendarInfoDidChange(_ calendarInfo: CalendarInfo) {
@@ -172,25 +169,36 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
         cancellables.removeAll()
     }
     
+    
+    public func fetchAllowedCalendarInfos(matchingContextIn contexts: Set<String>) throws -> [CalendarInfo] {
+
+        guard let domainObject = self.domainObject else { return [] }
+       
+        let fetchRequest: NSFetchRequest<CalendarInfo> = CalendarInfo.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "domain == %@", domainObject)
+       
+        let existingCalendarInfos = try Self.context.fetch(fetchRequest)
+        let allowedCalendarInfos = existingCalendarInfos.filter { calendarInfo in
+            guard let calendarContexts = calendarInfo.contexts as? Set<CalendarContext> else {
+                return false
+            }
+            
+            let calendarContextIds = calendarContexts.compactMap { $0.id }
+            return contexts.isSubset(of: calendarContextIds)
+        }
+       
+        return allowedCalendarInfos
+    }
+
+    
     public func getAllowedCalendars(matchingContextIn contexts: Set<String>) -> [EKCalendar] {
         guard let domainObject = self.domainObject else { return [] }
         
-        let fetchRequest: NSFetchRequest<CalendarInfo> = CalendarInfo.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "domain == %@", domainObject)
-        
         do {
-            let existingCalendarInfos = try Self.context.fetch(fetchRequest)
-            let allowedCalendarInfos = existingCalendarInfos.filter { calendarInfo in
-                return calendarInfo.contexts?.contains { context in
-                    guard let context = context as? CalendarContext else { return false }
-                    return contexts.contains(context.id ?? "")
-                } ?? false
-            }
-            
+            let allowedCalendarInfos = try fetchAllowedCalendarInfos(matchingContextIn: contexts)
             let allowedCalendarIds = Set(allowedCalendarInfos.compactMap { $0.id })
-            //print("Returning \(allowedCalendarIds.count) cals")
-            let allCalendars = calendarSource.eventStore.calendars(for: .event)
             
+            let allCalendars = calendarSource.eventStore.calendars(for: .event)
             return allCalendars.filter { allowedCalendarIds.contains($0.calendarIdentifier) }
         } catch {
             handleError(error, message: "Error fetching allowed calendars")
@@ -217,6 +225,13 @@ extension EventFetchSettingsManager {
     public func containsContext(calendarInfo: CalendarInfo, contextID: String) -> Bool {
         guard let contexts = calendarInfo.contexts as? Set<CalendarContext> else { return false }
         return contexts.contains { $0.id == contextID }
+    }
+    
+    public func containsContexts(calendarInfo: CalendarInfo, contextIDs: Set<String>) -> Bool {
+        guard let contexts = calendarInfo.contexts as? Set<CalendarContext> else { return false }
+        let contextIDsSet = Set(contextIDs)
+        let matchingContextIDs = contexts.compactMap { $0.id }
+        return contextIDsSet.isSubset(of: matchingContextIDs)
     }
     
     public func updateContexts(for calendarInfo: CalendarInfo, addContextIDs: Set<String>? = nil, removeContextIDs: Set<String>? = nil, notify: Bool = false) {

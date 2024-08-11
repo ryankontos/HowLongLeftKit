@@ -21,16 +21,29 @@ public class EventListGroupProvider {
         
         var groups = [TitledEventGroup]()
         
+        
+        
         if let selected {
             groups.append(TitledEventGroup.makeGroup(title: "Pinned", info: nil, events: [selected], makeIfEmpty: true)!)
         }
         
        
+        if point.allEvents.isEmpty { return [] }
         
         let mode = listSettings.sortMode
         
         if !listSettings.showInProgress && !listSettings.showUpcoming {
             return groups
+        }
+        
+        
+        
+        var nextGroup: TitledEventGroup?
+        
+        if let nextEvent = point.fetchSingleEvent(accordingTo: .soonestCountdownDate), nextEvent.status(at: point.date) == .upcoming {
+            let group = TitledEventGroup.makeGroup(title: nil, info: nil, events: [nextEvent], makeIfEmpty: true)!
+            group.flags = [.prominentSection]
+            nextGroup = group
         }
         
         if mode == .chronological {
@@ -50,6 +63,10 @@ public class EventListGroupProvider {
         
         if listSettings.showInProgress {
             onNowGroup = TitledEventGroup.makeGroup(title: "In Progress", info: nil, events: point.inProgressEvents, makeIfEmpty: listSettings.showInProgressWhenEmpty)
+        }
+        
+        if let nextGroup, onNowGroup == nil {
+            groups.insert(nextGroup, at: 0)
         }
         
         var upcomingGrouped: [TitledEventGroup]?

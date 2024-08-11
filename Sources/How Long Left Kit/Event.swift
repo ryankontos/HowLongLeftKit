@@ -23,7 +23,13 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
     @Published internal(set) public var isPinned: Bool = false
     
     public var locationName: String? {
-        return structuredLocation?.title?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let locationName = structuredLocation?.title?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !locationName.isEmpty, locationName.rangeOfCharacter(from: .alphanumerics) != nil {
+            return locationName
+        }
+        return nil
+
+        
     }
     
     public var location: CLLocation? {
@@ -67,16 +73,15 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
     }
     
     public func status(at date: Date = Date()) -> Status {
-        
-        let endInterval = endDate.timeIntervalSince(date)
-        if startDate.timeIntervalSince(date) >= 0 {
+        let currentDate = date
+
+        if currentDate < startDate {
             return .upcoming
-        } else if endInterval < 1 {
+        } else if currentDate > endDate {
             return .ended
         } else {
             return .inProgress
         }
-        
     }
     
     public func hash(into hasher: inout Hasher) {

@@ -53,7 +53,8 @@ public class DateFormatterUtility {
 
         let dateFormatter = DateFormatter()
         dateFormatter.locale = Locale.current
-        dateFormatter.dateFormat = minute == 0 ? "h a" : "h:mm a"
+        //dateFormatter.dateFormat = minute == 0 ? "h a" : "h:mm a"
+        dateFormatter.dateFormat = "h:mm a"
         
         if !dateFormatter.dateFormat.contains("a") {
             dateFormatter.dateFormat = minute == 0 ? "H" : "H:mm"
@@ -68,14 +69,25 @@ public class DateFormatterUtility {
 
         let currentYear = calendar.component(.year, from: Date())
         let dateYear = calendar.component(.year, from: date)
-        
+
+        // Helper function to strip time components from a date
+        func stripTime(from date: Date) -> Date? {
+            return calendar.date(from: calendar.dateComponents([.year, .month, .day], from: date))
+        }
+
+        // Strip time from the current date and the target date
+        guard let strippedCurrentDate = stripTime(from: Date()),
+              let strippedDate = stripTime(from: date) else {
+            return "" // Return an empty string or handle the error appropriately if stripping time fails
+        }
+
         // If the date is less than a week away, return the weekday name only
         if includeDayOfWeek {
             if calendar.isDateInToday(date) {
                 return "Today"
             } else if calendar.isDateInTomorrow(date) {
                 return "Tomorrow"
-            } else if let daysDifference = calendar.dateComponents([.day], from: Date(), to: date).day, daysDifference > 0 && daysDifference < 7 {
+            } else if let daysDifference = calendar.dateComponents([.day], from: strippedCurrentDate, to: strippedDate).day, daysDifference > 0 && daysDifference < 8 {
                 formatter.dateFormat = "EEEE"
                 return formatter.string(from: date)
             } else {
@@ -93,7 +105,6 @@ public class DateFormatterUtility {
         formatter.locale = Locale.current
         return formatter.string(from: date)
     }
-
     
     public func getDaysAwayString(from date: Date, at currentDate: Date, miniumumDays: Int? = 2) -> String? {
         // Get the current calendar

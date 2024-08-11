@@ -20,9 +20,17 @@ public class TitledEventGroup: Identifiable {
     
     public var events: [Event]
     
+    public var flags = [Flags]()
+    
     static public func makeGroup(title: String?, info: String?, events: [Event], makeIfEmpty: Bool) -> TitledEventGroup? {
         guard !events.isEmpty || makeIfEmpty else { return nil }
         return TitledEventGroup(title, info, events)
+    }
+    
+    public enum Flags {
+        
+        case prominentSection
+        
     }
     
 }
