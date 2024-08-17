@@ -8,6 +8,7 @@
 import Foundation
 import Combine
 
+@MainActor
 open class EventCacheObserver {
     
     let eventCache: EventCache

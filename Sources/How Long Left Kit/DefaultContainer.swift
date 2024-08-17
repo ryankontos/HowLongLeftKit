@@ -7,6 +7,7 @@
 
 import Foundation
 
+@MainActor
 open class DefaultContainer: ObservableObject {
     
     public let calendarReader: CalendarSource
