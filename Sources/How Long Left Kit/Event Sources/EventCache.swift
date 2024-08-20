@@ -134,7 +134,6 @@ public class EventCache: ObservableObject {
                     continue
                 }
             }
-        
             
             if var existingMatch = oldCache?.first(where: { ekEvent.id == $0.id }) {
                 let changes = updateEvent(Event: &existingMatch, from: ekEvent)
@@ -154,10 +153,7 @@ public class EventCache: ObservableObject {
             DispatchQueue.main.async {
                 self.objectWillChange.send()
             }
-            
-            
         }
-        
         
         // Record end time
         let endTime = Date()
@@ -167,7 +163,6 @@ public class EventCache: ObservableObject {
         //print("Time taken to update events: \(timeInterval) seconds")
     }
 
- 
     
     private func updateEvent(Event: inout Event, from ekEvent: EKEvent) -> Bool {
         

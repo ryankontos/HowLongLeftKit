@@ -21,13 +21,7 @@ let package = Package(
     targets: [
         .target(
             name: "HowLongLeftKit",
-            
-            dependencies: ["Defaults"],
-            swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency")
-              ]
-        ),
-            
+            dependencies: ["Defaults"]), // Add "Defaults" as a dependency to the target
         .testTarget(
             name: "How Long Left KitTests",
             dependencies: ["HowLongLeftKit", "Defaults"]),
