@@ -7,6 +7,7 @@
 
 import Foundation
 
+@MainActor
 public class EventListGroupProvider {
     
     private let dateFormatter = DateFormatterUtility()

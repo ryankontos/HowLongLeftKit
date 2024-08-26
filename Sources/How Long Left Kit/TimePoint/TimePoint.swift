@@ -7,6 +7,7 @@
 
 import Foundation
 
+@MainActor
 public class TimePoint: Equatable, ObservableObject, Identifiable {
     
     public var date: Date
@@ -21,7 +22,7 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
     @Published public var allGroupedByCountdownDate: [EventDate]
     @Published public var upcomingGroupedByStart: [EventDate]
     
-    public var id: Date { return date }
+    nonisolated public let id: Date
     
     public init(date: Date, inProgressEvents: [Event], upcomingEvents: [Event], allGroupedByCountdownDate: [EventDate], upcomingGroupedByStart: [EventDate]) {
         self.date = date
@@ -29,10 +30,11 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
         self.upcomingEvents = upcomingEvents
         self.allGroupedByCountdownDate = allGroupedByCountdownDate
         self.upcomingGroupedByStart = upcomingGroupedByStart
+        self.id = date
     }
     
-    public static func == (lhs: TimePoint, rhs: TimePoint) -> Bool {
-        return lhs.date == rhs.date && lhs.inProgressEvents == rhs.inProgressEvents && lhs.upcomingEvents == rhs.upcomingEvents
+    nonisolated public static func == (lhs: TimePoint, rhs: TimePoint) -> Bool {
+        return lhs.id == rhs.id
     }
     
     public func fetchSingleEvent(accordingTo rule: SingleEventFetchRule) -> Event? {

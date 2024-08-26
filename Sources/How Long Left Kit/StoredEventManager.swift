@@ -6,11 +6,12 @@
 //
 
 import Foundation
-import CoreData
+@preconcurrency import CoreData
 
+@MainActor
 public class StoredEventManager: ObservableObject {
     
-    let context = HLLPersistenceController.shared.viewContext
+    let context: HLLPersistenceController
     
     private var domainObject: EventStorageDomain?
     
@@ -18,19 +19,23 @@ public class StoredEventManager: ObservableObject {
     
     private var limit: Int?
     
-    public init(domain: String, limit: Int? = nil) {
+    public init(domain: String, limit: Int? = nil, context: HLLPersistenceController) {
         self.domain = domain
         self.limit = limit
-        fetchOrCreateDomainObject()
+        self.context = context
+        
+       
+        
+        
     }
     
     public func removeEventFromStore(eventInfo: StoredEventInfo) {
        
         deleteEventInfo(matching: eventInfo.eventID)
         
-        DispatchQueue.main.async {
+       
             self.objectWillChange.send()
-        }
+        
         
     }
     
@@ -53,9 +58,9 @@ public class StoredEventManager: ObservableObject {
 
         createEventInfo(with: event)
 
-        DispatchQueue.main.async {
-            self.objectWillChange.send()
-        }
+        objectWillChange.send()
+       
+        
     }
     
     public func getAllStoredEvents() -> [StoredEventInfo] {
@@ -64,8 +69,10 @@ public class StoredEventManager: ObservableObject {
         let fetchRequest: NSFetchRequest<StoredEventInfo> = StoredEventInfo.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "domain == %@", domainObject)
         
+        
+        
         do {
-            let eventInfos = try context.fetch(fetchRequest)
+            let eventInfos = try context.getViewContext().fetch(fetchRequest)
             return eventInfos
         } catch {
             fatalError(error.localizedDescription)
@@ -85,14 +92,14 @@ public class StoredEventManager: ObservableObject {
         fetchRequest.predicate = NSPredicate(format: "domainID == %@", domain)
         
         do {
-            let results = try self.context.fetch(fetchRequest)
+            let results = try self.context.getViewContext().fetch(fetchRequest)
             if let existingDomain = results.first {
                 self.domainObject = existingDomain
             } else {
-                let newDomain = EventStorageDomain(context: self.context)
+                let newDomain = EventStorageDomain(context: self.context.getViewContext())
                 newDomain.domainID = domain
                 self.domainObject = newDomain
-                try self.context.save()
+                try self.context.getViewContext().save()
             }
         } catch {
             fatalError(error.localizedDescription)
@@ -103,16 +110,16 @@ public class StoredEventManager: ObservableObject {
         guard let items = domainObject?.eventInfos as? [StoredEventInfo] else { return }
         
         for info in items {
-            context.delete(info)
+            context.getViewContext().delete(info)
         }
         
-        try? context.save()
+        try? context.getViewContext().save()
     }
     
     // Create HiddenEventInfo
     private func createEventInfo(with event: Event) {
         
-        let newHiddenEventInfo = StoredEventInfo(context: context)
+        let newHiddenEventInfo = StoredEventInfo(context: context.getViewContext())
         newHiddenEventInfo.eventID = event.eventID
         newHiddenEventInfo.domain = domainObject
         newHiddenEventInfo.title = event.title
@@ -125,10 +132,10 @@ public class StoredEventManager: ObservableObject {
         
         domainObject?.addToEventInfos(newHiddenEventInfo)
         
-        context.insert(newHiddenEventInfo)
+        context.getViewContext().insert(newHiddenEventInfo)
         
         do {
-            try context.save()
+            try context.getViewContext().save()
         } catch {
             print("Failed to save new HiddenEventInfo: \(error)")
         }
@@ -146,7 +153,7 @@ public class StoredEventManager: ObservableObject {
         fetchRequest.predicate = NSPredicate(format: "domain == %@ AND eventID == %@", domainObject, eventId)
         
         do {
-            let eventInfos = try context.fetch(fetchRequest)
+            let eventInfos = try context.getViewContext().fetch(fetchRequest)
             return eventInfos.first
         } catch {
             fatalError(error.localizedDescription)
@@ -156,10 +163,10 @@ public class StoredEventManager: ObservableObject {
     // Delete HiddenEventInfo
     func deleteEventInfo(matching eventId: String?) {
         guard let hiddenEventInfo = fetchEventInfo(matching: eventId) else { return }
-        context.delete(hiddenEventInfo)
+        context.getViewContext().delete(hiddenEventInfo)
         
         do {
-            try context.save()
+            try context.getViewContext().save()
         } catch {
             print("Failed to delete HiddenEventInfo: \(error)")
         }
@@ -175,10 +182,10 @@ public class StoredEventManager: ObservableObject {
         fetchRequest.fetchLimit = 1
         
         do {
-            let oldestEventInfos = try context.fetch(fetchRequest)
+            let oldestEventInfos = try context.getViewContext().fetch(fetchRequest)
             if let oldestEventInfo = oldestEventInfos.first {
-                context.delete(oldestEventInfo)
-                try context.save()
+                context.getViewContext().delete(oldestEventInfo)
+                try context.getViewContext().save()
             }
         } catch {
             print("Failed to remove oldest HiddenEventInfo: \(error)")

@@ -8,6 +8,7 @@
 import Foundation
 import Combine
 
+
 @MainActor
 public class InfoStringManager: ObservableObject {
     @Published public var infoString: String = ""

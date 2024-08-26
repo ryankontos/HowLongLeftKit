@@ -8,13 +8,14 @@
 import Foundation
 import CoreData
 
+@MainActor
 public class HLLPersistenceController {
-    static let shared = HLLPersistenceController()
+    //static let shared = HLLPersistenceController()
 
-    private let persistentContainer: NSPersistentCloudKitContainer
+    public let persistentContainer: NSPersistentCloudKitContainer
     private let backgroundContext: NSManagedObjectContext
 
-    private init() {
+    public init() {
         guard let modelURL = Bundle.module.url(forResource: "HowLongLeftDataModel", withExtension: "momd"),
               let managedObjectModel = NSManagedObjectModel(contentsOf: modelURL) else {
             fatalError("Failed to locate or load Core Data model")
@@ -30,12 +31,17 @@ public class HLLPersistenceController {
         backgroundContext = persistentContainer.newBackgroundContext()
     }
 
-    public var viewContext: NSManagedObjectContext {
+    public func getViewContext() -> NSManagedObjectContext {
         return persistentContainer.viewContext
     }
+    
+    private var context: NSManagedObjectContext {
+        return persistentContainer.viewContext
+    }
+  
 
     public func saveContext() {
-        saveContext(context: viewContext)
+        saveContext(context: context)
     }
 
     public func saveBackgroundContext() {
@@ -55,21 +61,21 @@ public class HLLPersistenceController {
         }
     }
 
-    public func fetchEntities<T: NSManagedObject>(entityName: String, sortDescriptors: [NSSortDescriptor] = [], predicate: NSPredicate? = nil) -> [T] {
+    public func fetchEntities<T: NSManagedObject>(entityName: String, sortDescriptors: [NSSortDescriptor] = [], predicate: NSPredicate? = nil) async -> [T] {
         let fetchRequest = NSFetchRequest<T>(entityName: entityName)
         fetchRequest.sortDescriptors = sortDescriptors
         fetchRequest.predicate = predicate
 
         do {
-            return try viewContext.fetch(fetchRequest)
+            return try context.fetch(fetchRequest)
         } catch {
             fatalError("Failed to fetch entities: \(error)")
         }
     }
 
     public func deleteEntity(_ entity: NSManagedObject) {
-        viewContext.perform {
-            self.viewContext.delete(entity)
+        context.perform {
+            self.context.delete(entity)
             self.saveContext()
         }
     }

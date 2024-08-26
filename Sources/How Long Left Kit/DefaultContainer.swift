@@ -7,6 +7,7 @@
 
 import Foundation
 
+@MainActor
 open class DefaultContainer: ObservableObject {
     
     public let calendarReader: CalendarSource
@@ -20,6 +21,8 @@ open class DefaultContainer: ObservableObject {
     
     public let timerContainer = GlobalTimerContainer()
     
+    public let persistenceController = HLLPersistenceController()
+    
     public init() {
         
         let domainString = "HowLongLeft_App"
@@ -28,11 +31,12 @@ open class DefaultContainer: ObservableObject {
         
         let appSet: Set<String> = [HLLStandardCalendarContexts.app.rawValue]
         let config = EventFetchSettingsManager.Configuration(domain: domainString, defaultContextsForNonMatches: appSet)
-        calendarPrefsManager = EventFetchSettingsManager(calendarSource: calendarReader, config: config)
         
-        hiddenEventManager = StoredEventManager(domain: "\(domainString)_HiddenEvents")
+        calendarPrefsManager = EventFetchSettingsManager(calendarSource: calendarReader, config: config, context: persistenceController)
         
-        selectedEventManager = StoredEventManager(domain: "\(domainString)_SelectedEvent", limit: 1)
+        hiddenEventManager = StoredEventManager(domain: "\(domainString)_HiddenEvents", context: persistenceController)
+        
+        selectedEventManager = StoredEventManager(domain: "\(domainString)_SelectedEvent", limit: 1, context: persistenceController)
         
         eventCache = EventCache(calendarReader: calendarReader, calendarProvider: calendarPrefsManager, calendarContexts: [HLLStandardCalendarContexts.app.rawValue], hiddenEventManager: hiddenEventManager, id: "DefaultContainer")
         pointStore = TimePointStore(eventCache: eventCache)

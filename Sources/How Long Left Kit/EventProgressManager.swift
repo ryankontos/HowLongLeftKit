@@ -8,6 +8,7 @@
 import Foundation
 import Combine
 
+@MainActor
 public class EventProgressManager: ObservableObject {
     @Published public var progress: Double = 0.0
     private var cancellables = Set<AnyCancellable>()

@@ -7,9 +7,10 @@
 
 import Foundation
 import EventKit
-import Combine
+@preconcurrency import Combine
 import os.log
 
+@MainActor
 public class EventCache: ObservableObject {
     
     let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "EventCache")
@@ -28,7 +29,7 @@ public class EventCache: ObservableObject {
     
     let queue = DispatchQueue(label: "com.ryankontos.howlongleft_eventcachequeue")
     
-    private weak var calendarProvider: (any EventFilteringOptionsProvider)? {
+    private weak var calendarProvider: EventFetchSettingsManager? {
         didSet {
             setupCalendarsSubscription()
         }
@@ -42,20 +43,29 @@ public class EventCache: ObservableObject {
     
     public var id: String
     
-    public init(calendarReader: CalendarSource?, calendarProvider: any EventFilteringOptionsProvider, calendarContexts: Set<String>, hiddenEventManager: StoredEventManager, id: String) {
+    public init(calendarReader: CalendarSource?, calendarProvider: EventFetchSettingsManager, calendarContexts: Set<String>, hiddenEventManager: StoredEventManager, id: String) {
         self.id = id
         self.calendarReader = calendarReader
         self.calendarProvider = calendarProvider
         self.calendarContexts = calendarContexts
         self.hiddenEventManager = hiddenEventManager
-        setupEventStoreSubscription()
-        setupCalendarsSubscription()
-        setupHiddenEventManagerSubscription()
-        updateEvents()
+       
         
         
         
         while calendarReader?.authorization == .notDetermined { }
+        
+        setup()
+        
+    }
+    
+    func setup()  {
+        
+            setupEventStoreSubscription()
+            setupCalendarsSubscription()
+            setupHiddenEventManagerSubscription()
+            updateEvents()
+            
         
     }
     
@@ -68,7 +78,10 @@ public class EventCache: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 
-                self?.updateEvents()
+                
+                    
+                    self?.updateEvents()
+                
             }
             
     }
@@ -82,7 +95,10 @@ public class EventCache: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                
-                self?.updateEvents()
+                
+                    
+                    self?.updateEvents()
+                
             }
             
     }
@@ -98,13 +114,23 @@ public class EventCache: ObservableObject {
         eventStoreSubscription = NotificationCenter.default.publisher(for: .EKEventStoreChanged, object: reader.eventStore)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.calendarProvider?.updateForNewCals()
-                self?.updateEvents()
+                
+               // guard let provider = self?.calendarProvider else { return }
+                    
+                Task {
+                    //await provider.updateForNewCals()
+                    self?.updateEvents()
+                }
+                
+                    
+                    
+                
             }
+        
             
     }
     
-    func getEvents() -> [Event] {
+    func getEvents() async -> [Event] {
         if eventCache == nil { updateEvents() }
         if stale { updateEvents() }
         return eventCache ?? []
@@ -150,9 +176,9 @@ public class EventCache: ObservableObject {
         
         if foundChanges {
             self.eventCache = newEventCache
-            DispatchQueue.main.async {
+           
                 self.objectWillChange.send()
-            }
+            
         }
         
         // Record end time

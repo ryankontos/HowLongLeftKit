@@ -6,8 +6,9 @@
 //
 
 import Foundation
-import EventKit
+@preconcurrency import EventKit
 
+@MainActor
 public class CalendarSource: ObservableObject {
     
     internal let eventStore = EKEventStore()

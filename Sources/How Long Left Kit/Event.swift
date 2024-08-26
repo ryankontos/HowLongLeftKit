@@ -8,7 +8,8 @@
 import Foundation
 import EventKit
 
-public class Event: ObservableObject, Identifiable, Hashable, Equatable {
+@MainActor
+public final class Event: ObservableObject, Identifiable, Hashable, Equatable {
     
     @Published public var title: String
     @Published public var startDate: Date
@@ -38,7 +39,7 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
     
     public var eventID: String
     
-    public var id: String
+    nonisolated public let id: String
     
     init(event: EKEvent) {
         self.title = event.title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -84,11 +85,11 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
         }
     }
     
-    public func hash(into hasher: inout Hasher) {
+    nonisolated public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
     
-    public static func == (lhs: Event, rhs: Event) -> Bool {
+    nonisolated public static func == (lhs: Event, rhs: Event) -> Bool {
         lhs.id == rhs.id
     }
     
@@ -104,12 +105,12 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
 public extension Array where Element == Event {
     
     // Function to sort by start date
-    func sortedByStartDate() -> [Event] {
+    @MainActor func sortedByStartDate() -> [Event] {
         return self.sorted { $0.startDate < $1.startDate }
     }
     
     // Function to sort by end date
-    func sortedByEndDate() -> [Event] {
+    @MainActor func sortedByEndDate() -> [Event] {
         return self.sorted { $0.endDate < $1.endDate }
     }
 }

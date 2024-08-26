@@ -9,30 +9,27 @@ import Foundation
 import Combine
 import os.log
 
+@MainActor
 public class TimePointStore: EventCacheObserver, ObservableObject {
     
     private let pointGen = TimePointGenerator(groupingMode: .countdownDate)
     
-    lazy var logger = Logger(subsystem: "HowLongLeftMac", category: "TimePointStore.\(self.eventCache.id)")
-    
     var points: [TimePoint]?
-    var updateTimer: Timer?
+    private var updateTimer: Timer?
     
     public var currentPoint: TimePoint? {
         return getPointAt(date: Date())
     }
     
     override public init(eventCache: EventCache) {
-       
         super.init(eventCache: eventCache)
-        updatePoints()
-      //  logger.info("Init TimePointStore")
         
+        Task {
+            await updatePoints()
+        }
     }
     
-    deinit {
-        updateTimer?.invalidate()
-    }
+    
     
     public func getPointAt(date: Date) -> TimePoint? {
         let point = points?.last(where: { $0.date < date })
@@ -40,18 +37,11 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
         return point
     }
     
-    private func updatePoints() {
-        
-        //print("Updating points")
-        
+    private func updatePoints() async {
         let oldpoints = points
         var newResult = [TimePoint]()
         var foundChanges = false
-        let events = eventCache.getEvents()
-        
-      //  logger.info("Updating points got \(events.count)")
-        
-        //print("Updating points got \(events.count)")
+        let events = await eventCache.getEvents()
         
         let newPoints = pointGen.generateTimePoints(for: events)
         
@@ -69,7 +59,6 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
         if newResult != oldpoints { foundChanges = true }
         
         if foundChanges {
-           // logger.info("Setting points to array with \(newResult.count)")
             self.points = newResult
             DispatchQueue.main.async {
                 self.objectWillChange.send()
@@ -82,18 +71,23 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
         updateTimer?.invalidate()
         let now = Date()
         if let nextUpdateTime = points?.first(where: { $0.date > now })?.date {
-            let now = Date()
             if nextUpdateTime > now {
-                updateTimer = Timer.scheduledTimer(withTimeInterval: nextUpdateTime.timeIntervalSince(now), repeats: false) { [weak self] _ in
-                    self?.updatePoints()
-                }
+                let timeInterval = nextUpdateTime.timeIntervalSince(now)
+                updateTimer = Timer.scheduledTimer(timeInterval: timeInterval, target: self, selector: #selector(handleTimerFired), userInfo: nil, repeats: false)
                 RunLoop.main.add(updateTimer!, forMode: .common)
             }
         }
     }
     
-   
+    @objc private func handleTimerFired() {
+        Task {
+            await updatePoints()
+        }
+    }
     
-    public override func eventsChanged() { updatePoints() }
-   
+    public override func eventsChanged() {
+        Task {
+            await updatePoints()
+        }
+    }
 }

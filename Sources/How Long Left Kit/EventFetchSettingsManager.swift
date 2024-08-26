@@ -1,14 +1,15 @@
 import Foundation
 import Defaults
-import Combine
+@preconcurrency import Combine
 import EventKit
 import CoreData
 import os.log
 
-public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsProvider {
+@MainActor
+public class EventFetchSettingsManager: ObservableObject {
   
     
-    public struct Configuration {
+    public struct Configuration: Sendable {
         public init(domain: String, defaultContextsForNonMatches: Set<String>) {
             self.domain = domain
             self.defaultContextsForNonMatches = defaultContextsForNonMatches
@@ -21,7 +22,7 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
         var defaultContextsForNonMatches: Set<String>
     }
     
-    static let context = HLLPersistenceController.shared.viewContext
+
 
     public var configuration: Configuration
     public var calendarItems: [CalendarInfo] = []
@@ -32,18 +33,23 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
     
     private let logger: Logger
     
-    public init(calendarSource: CalendarSource, config: Configuration) {
+    private let context: HLLPersistenceController
+    
+    public init(calendarSource: CalendarSource, config: Configuration, context: HLLPersistenceController) {
         self.configuration = config
         self.calendarSource = calendarSource
-        
+        self.context = context
         self.logger = Logger(subsystem: "howlongleftmac.eventfetchsettingsmanager", category: "\(config.domain)")
         
-        fetchOrCreateDomainObject()
-        syncCalendarsWithDomain()
-        updateCalendarItems()
-        updateSubscriptions()
+        
         
         Task {
+            
+             fetchOrCreateDomainObject()
+             syncCalendarsWithDomain()
+             updateCalendarItems()
+             updateSubscriptions()
+            
             for await _ in Defaults.updates(config.allowAllDayKey) {
                 DispatchQueue.main.async {
                     self.objectWillChange.send()
@@ -58,14 +64,14 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
         fetchRequest.predicate = NSPredicate(format: "domainID == %@", configuration.domain)
         
         do {
-            let results = try Self.context.fetch(fetchRequest)
+            let results = try self.context.getViewContext().fetch(fetchRequest)
             if let existingDomain = results.first {
                 self.domainObject = existingDomain
             } else {
-                let newDomain = CalendarStorageDomain(context: Self.context)
+                let newDomain = CalendarStorageDomain(context: self.context.getViewContext())
                 newDomain.domainID = configuration.domain
                 self.domainObject = newDomain
-                try Self.context.save()
+                try self.context.getViewContext().save()
             }
         } catch {
             handleError(error, message: "Error fetching or saving domain object")
@@ -81,7 +87,7 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
         fetchRequest.predicate = NSPredicate(format: "domain == %@", domainObject)
         
         do {
-            let existingCalendarInfos = try Self.context.fetch(fetchRequest)
+            let existingCalendarInfos = try self.context.getViewContext().fetch(fetchRequest)
             
             for ekCalendar in allCalendars {
                 if let match = existingCalendarInfos.first(where: { $0.id == ekCalendar.calendarIdentifier }) ?? existingCalendarInfos.first(where: { $0.title == ekCalendar.title }) {
@@ -90,13 +96,13 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
                         match.title = ekCalendar.title
                     }
                 } else {
-                    let newCalendarInfo = CalendarInfo(context: Self.context)
+                    let newCalendarInfo = CalendarInfo(context: self.context.getViewContext())
                     newCalendarInfo.id = ekCalendar.calendarIdentifier
                     newCalendarInfo.title = ekCalendar.title
                     newCalendarInfo.domain = domainObject
 
                     for context in configuration.defaultContextsForNonMatches {
-                        let newContext = CalendarContext(context: Self.context)
+                        let newContext = CalendarContext(context: self.context.getViewContext())
                         newContext.id = context
                         newContext.calendar = newCalendarInfo
                         newCalendarInfo.addToContexts(newContext)
@@ -104,7 +110,7 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
                 }
             }
             
-            try Self.context.save()
+            try self.context.getViewContext().save()
             updateCalendarItems()
         } catch {
             handleError(error, message: "Error syncing calendars with domain")
@@ -118,7 +124,7 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
         fetchRequest.predicate = NSPredicate(format: "domain == %@", domainObject)
         
         do {
-            let existingCalendarInfos = try Self.context.fetch(fetchRequest)
+            let existingCalendarInfos = try self.context.getViewContext().fetch(fetchRequest)
             let allCalendars = calendarSource.eventStore.calendars(for: .event)
             let allowedCalendarIds = Set(allCalendars.map { $0.calendarIdentifier })
             
@@ -129,8 +135,10 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
             
             DispatchQueue.main.async {
                 self.objectWillChange.send()
-                self.updateSubscriptions()
+               
             }
+            
+            self.updateSubscriptions()
             
         } catch {
             handleError(error, message: "Error updating calendar items")
@@ -177,7 +185,7 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
         let fetchRequest: NSFetchRequest<CalendarInfo> = CalendarInfo.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "domain == %@", domainObject)
        
-        let existingCalendarInfos = try Self.context.fetch(fetchRequest)
+        let existingCalendarInfos = try self.context.getViewContext().fetch(fetchRequest)
         let allowedCalendarInfos = existingCalendarInfos.filter { calendarInfo in
             guard let calendarContexts = calendarInfo.contexts as? Set<CalendarContext> else {
                 return false
@@ -192,7 +200,7 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
 
     
     public func getAllowedCalendars(matchingContextIn contexts: Set<String>) -> [EKCalendar] {
-        guard let domainObject = self.domainObject else { return [] }
+       // guard let domainObject = self.domainObject else { return [] }
         
         do {
             let allowedCalendarInfos = try fetchAllowedCalendarInfos(matchingContextIn: contexts)
@@ -206,8 +214,10 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
         }
     }
     
-    public func updateForNewCals() {
-        syncCalendarsWithDomain()
+    nonisolated public func updateForNewCals() {
+        Task {
+            await syncCalendarsWithDomain()
+        }
     }
 }
 
@@ -248,7 +258,7 @@ extension EventFetchSettingsManager {
                 continue
             }
 
-            let newContext = CalendarContext(context: Self.context)
+            let newContext = CalendarContext(context: self.context.getViewContext())
             newContext.id = contextID
             newContext.calendar = calendarInfo
             
@@ -264,7 +274,7 @@ extension EventFetchSettingsManager {
                 }
 
                 if let contextToRemove = contexts.first(where: { $0.id == contextID }) {
-                    Self.context.delete(contextToRemove)
+                    self.context.getViewContext().delete(contextToRemove)
                 }
             }
         }
@@ -313,7 +323,7 @@ extension EventFetchSettingsManager {
     // Helper method to save the context
     private func saveContext() {
         do {
-            try Self.context.save()
+            try self.context.getViewContext().save()
         } catch {
             handleError(error, message: "Error saving context")
         }

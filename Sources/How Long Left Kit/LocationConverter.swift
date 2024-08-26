@@ -23,8 +23,8 @@ public actor LocationCache {
     }
 }
 
-public class LocationConverter {
-    static public let shared = LocationConverter()
+public struct LocationConverter {
+    
     private let geocoder = CLGeocoder()
     private let cache = LocationCache()
     

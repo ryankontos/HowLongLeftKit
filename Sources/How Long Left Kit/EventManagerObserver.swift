@@ -6,8 +6,9 @@
 //
 
 import Foundation
-import Combine
+@preconcurrency import Combine
 
+@MainActor
 open class EventCacheObserver {
     
     let eventCache: EventCache
@@ -26,9 +27,9 @@ open class EventCacheObserver {
         eventSubscription = eventCache.objectWillChange
             .receive(on: queue)
             .sink(receiveValue: { [weak self] _ in
-                DispatchQueue.main.async {
-                    self?.eventsChanged()
-                }
+               
+                self?.eventsChanged()
+                
             })
     }
     

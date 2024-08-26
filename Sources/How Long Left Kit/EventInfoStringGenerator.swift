@@ -7,13 +7,14 @@
 
 import Foundation
 
+@MainActor
 public protocol EventInfoStringGenerator {
     
     func getString(from event: Event, at date: Date) -> String
     
 }
 
-
+@MainActor
 public class EventCountdownTextGenerator: EventInfoStringGenerator {
     
     public init() {
