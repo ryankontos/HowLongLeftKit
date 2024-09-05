@@ -7,20 +7,19 @@
 
 import Foundation
 
-@MainActor
-public class TimePoint: Equatable, ObservableObject, Identifiable {
+public struct TimePoint: Equatable, Identifiable, Sendable {
     
     public var date: Date
     
-    @Published public var inProgressEvents: [Event]
-    @Published public var upcomingEvents: [Event]
+    public var inProgressEvents: [Event]
+    public var upcomingEvents: [Event]
     
     public var allEvents: [Event] {
         return inProgressEvents + upcomingEvents
     }
     
-    @Published public var allGroupedByCountdownDate: [EventDate]
-    @Published public var upcomingGroupedByStart: [EventDate]
+    public var allGroupedByCountdownDate: [EventDate]
+    public var upcomingGroupedByStart: [EventDate]
     
     nonisolated public let id: Date
     
@@ -69,14 +68,7 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
     }
     
     
-    func updateInfo(from new: TimePoint) -> Bool {
-        var flag = false
-        updateIfNeeded(&self.inProgressEvents, compareTo: new.inProgressEvents, flag: &flag)
-        updateIfNeeded(&self.upcomingEvents, compareTo: new.upcomingEvents, flag: &flag)
-        updateIfNeeded(&self.allGroupedByCountdownDate, compareTo: new.allGroupedByCountdownDate, flag: &flag)
-        updateIfNeeded(&self.upcomingGroupedByStart, compareTo: new.upcomingGroupedByStart, flag: &flag)
-        return flag
-    }
+  
 
 }
 

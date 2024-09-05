@@ -9,11 +9,11 @@ import SwiftUI
 
 public struct EventCountdownText: View {
     
-    @EnvironmentObject private var timerContainer: GlobalTimerContainer
+   // @EnvironmentObject private var timerContainer: GlobalTimerContainer
     
     @ObservedObject private var infoStringGen: InfoStringManager
     
-    @ObservedObject private var event: Event
+    private var event: Event
     
     
     
@@ -28,7 +28,7 @@ public struct EventCountdownText: View {
         Text(infoStringGen.infoString)
             .monospacedDigit()
             .onAppear() {
-                infoStringGen.setPublisher(timerContainer.everySecondPublisher)
+               // infoStringGen.setPublisher(timerContainer.everySecondPublisher)
             }
             .transaction {
                 $0.animation = nil

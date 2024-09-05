@@ -7,7 +7,6 @@
 
 import Foundation
 
-@MainActor
 open class DefaultContainer: ObservableObject {
     
     public let calendarReader: CalendarSource
@@ -29,6 +28,8 @@ open class DefaultContainer: ObservableObject {
         
         calendarReader = CalendarSource(requestCalendarAccessImmediately: true)
         
+       
+        
         let appSet: Set<String> = [HLLStandardCalendarContexts.app.rawValue]
         let config = EventFetchSettingsManager.Configuration(domain: domainString, defaultContextsForNonMatches: appSet)
         
@@ -41,6 +42,15 @@ open class DefaultContainer: ObservableObject {
         eventCache = EventCache(calendarReader: calendarReader, calendarProvider: calendarPrefsManager, calendarContexts: [HLLStandardCalendarContexts.app.rawValue], hiddenEventManager: hiddenEventManager, id: "DefaultContainer")
         pointStore = TimePointStore(eventCache: eventCache)
         
+       
+        
+    }
+    
+    open func setup() async {
+        
+        await calendarReader.setup()
+        
+        await pointStore.setup()
         
     }
     

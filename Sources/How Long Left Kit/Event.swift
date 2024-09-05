@@ -8,34 +8,23 @@
 import Foundation
 import EventKit
 
-@MainActor
-public final class Event: ObservableObject, Identifiable, Hashable, Equatable {
+public struct Event: Identifiable, Hashable, Equatable, Sendable {
     
-    @Published public var title: String
-    @Published public var startDate: Date
-    @Published public var endDate: Date
+    public var title: String
+    public var startDate: Date
+    public var endDate: Date
     
-    @Published public var calendarID: String
+    public var calendarID: String
     
-    @Published public var isAllDay: Bool
+    public var isAllDay: Bool
     
-    @Published public var structuredLocation: EKStructuredLocation?
+    public var location: CLLocation?
+    public var locationName: String?
     
-    @Published internal(set) public var isPinned: Bool = false
+    internal(set) public var isPinned: Bool = false
     
-    public var locationName: String? {
-        if let locationName = structuredLocation?.title?.trimmingCharacters(in: .whitespacesAndNewlines),
-           !locationName.isEmpty, locationName.rangeOfCharacter(from: .alphanumerics) != nil {
-            return locationName
-        }
-        return nil
 
-        
-    }
-    
-    public var location: CLLocation? {
-        return structuredLocation?.geoLocation
-    }
+ 
     
     public var eventID: String
     
@@ -49,7 +38,8 @@ public final class Event: ObservableObject, Identifiable, Hashable, Equatable {
         self.eventID = event.eventIdentifier
         self.calendarID = event.calendar?.calendarIdentifier ?? "Nil"
         self.isAllDay = event.isAllDay
-        self.structuredLocation = event.structuredLocation
+        self.location = event.structuredLocation?.geoLocation
+        self.locationName = event.location
        
         
     }
@@ -105,12 +95,12 @@ public final class Event: ObservableObject, Identifiable, Hashable, Equatable {
 public extension Array where Element == Event {
     
     // Function to sort by start date
-    @MainActor func sortedByStartDate() -> [Event] {
+    func sortedByStartDate() -> [Event] {
         return self.sorted { $0.startDate < $1.startDate }
     }
     
     // Function to sort by end date
-    @MainActor func sortedByEndDate() -> [Event] {
+    func sortedByEndDate() -> [Event] {
         return self.sorted { $0.endDate < $1.endDate }
     }
 }

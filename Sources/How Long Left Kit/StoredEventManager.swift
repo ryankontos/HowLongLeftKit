@@ -6,37 +6,33 @@
 //
 
 import Foundation
-@preconcurrency import CoreData
+import CoreData
 
-@MainActor
 public class StoredEventManager: ObservableObject {
     
     let context: HLLPersistenceController
     
     private var domainObject: EventStorageDomain?
-    
     private var domain: String = ""
-    
     private var limit: Int?
+    
+    private var eventUpdateStreamContinuation: AsyncStream<Void>.Continuation?
+    public lazy var eventUpdateStream: AsyncStream<Void> = {
+        AsyncStream { continuation in
+            eventUpdateStreamContinuation = continuation
+        }
+    }()
     
     public init(domain: String, limit: Int? = nil, context: HLLPersistenceController) {
         self.domain = domain
         self.limit = limit
         self.context = context
-        
-       
-        
-        
+        fetchOrCreateDomainObject()
     }
     
     public func removeEventFromStore(eventInfo: StoredEventInfo) {
-       
         deleteEventInfo(matching: eventInfo.eventID)
-        
-       
-            self.objectWillChange.send()
-        
-        
+        notifyChanges()
     }
     
     public func addEventToStore(event: Event, removeIfExists: Bool = false) {
@@ -57,10 +53,7 @@ public class StoredEventManager: ObservableObject {
         }
 
         createEventInfo(with: event)
-
-        objectWillChange.send()
-       
-        
+        notifyChanges()
     }
     
     public func getAllStoredEvents() -> [StoredEventInfo] {
@@ -68,8 +61,6 @@ public class StoredEventManager: ObservableObject {
         
         let fetchRequest: NSFetchRequest<StoredEventInfo> = StoredEventInfo.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "domain == %@", domainObject)
-        
-        
         
         do {
             let eventInfos = try context.getViewContext().fetch(fetchRequest)
@@ -114,38 +105,36 @@ public class StoredEventManager: ObservableObject {
         }
         
         try? context.getViewContext().save()
+        notifyChanges()
     }
     
-    // Create HiddenEventInfo
+    // Create StoredEventInfo
     private func createEventInfo(with event: Event) {
         
-        let newHiddenEventInfo = StoredEventInfo(context: context.getViewContext())
-        newHiddenEventInfo.eventID = event.eventID
-        newHiddenEventInfo.domain = domainObject
-        newHiddenEventInfo.title = event.title
-        newHiddenEventInfo.calendarID = event.calendarID
-        newHiddenEventInfo.startDate = event.startDate
-        newHiddenEventInfo.endDate = event.endDate
-        newHiddenEventInfo.isAllDay = event.isAllDay
-        newHiddenEventInfo.domain = domainObject
-        newHiddenEventInfo.storedDate = Date()
+        let newStoredEventInfo = StoredEventInfo(context: context.getViewContext())
+        newStoredEventInfo.eventID = event.eventID
+        newStoredEventInfo.domain = domainObject
+        newStoredEventInfo.title = event.title
+        newStoredEventInfo.calendarID = event.calendarID
+        newStoredEventInfo.startDate = event.startDate
+        newStoredEventInfo.endDate = event.endDate
+        newStoredEventInfo.isAllDay = event.isAllDay
+        newStoredEventInfo.storedDate = Date()
         
-        domainObject?.addToEventInfos(newHiddenEventInfo)
-        
-        context.getViewContext().insert(newHiddenEventInfo)
+        domainObject?.addToEventInfos(newStoredEventInfo)
+        context.getViewContext().insert(newStoredEventInfo)
         
         do {
             try context.getViewContext().save()
         } catch {
-            print("Failed to save new HiddenEventInfo: \(error)")
+            print("Failed to save new StoredEventInfo: \(error)")
         }
     }
     
-    // Fetch HiddenEventInfo matching the eventID
+    // Fetch StoredEventInfo matching the eventID
     func fetchEventInfo(matching eventId: String?) -> StoredEventInfo? {
         
         guard let eventId else { return nil }
-        
         guard let domainObject else { return nil }
         
         let fetchRequest: NSFetchRequest<StoredEventInfo> = StoredEventInfo.fetchRequest()
@@ -160,15 +149,15 @@ public class StoredEventManager: ObservableObject {
         }
     }
     
-    // Delete HiddenEventInfo
+    // Delete StoredEventInfo
     func deleteEventInfo(matching eventId: String?) {
-        guard let hiddenEventInfo = fetchEventInfo(matching: eventId) else { return }
-        context.getViewContext().delete(hiddenEventInfo)
+        guard let storedEventInfo = fetchEventInfo(matching: eventId) else { return }
+        context.getViewContext().delete(storedEventInfo)
         
         do {
             try context.getViewContext().save()
         } catch {
-            print("Failed to delete HiddenEventInfo: \(error)")
+            print("Failed to delete StoredEventInfo: \(error)")
         }
     }
     
@@ -188,7 +177,18 @@ public class StoredEventManager: ObservableObject {
                 try context.getViewContext().save()
             }
         } catch {
-            print("Failed to remove oldest HiddenEventInfo: \(error)")
+            print("Failed to remove oldest StoredEventInfo: \(error)")
         }
+    }
+    
+    // Notify listeners of changes
+    private func notifyChanges() {
+        let allEvents = getAllStoredEvents()
+        objectWillChange.send()
+        eventUpdateStreamContinuation?.yield()
+    }
+    
+    deinit {
+        eventUpdateStreamContinuation?.finish()
     }
 }

@@ -7,7 +7,7 @@
 
 import Foundation
 
-public class EventDate: Equatable {
+public struct EventDate: Equatable, Sendable {
     public static func == (lhs: EventDate, rhs: EventDate) -> Bool {
         return lhs.date == rhs.date && lhs.events == rhs.events
     }

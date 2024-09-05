@@ -9,8 +9,8 @@ import Foundation
 import Combine
 import os.log
 
-@MainActor
-public class TimePointStore: EventCacheObserver, ObservableObject {
+
+public class TimePointStore: ObservableObject {
     
     private let pointGen = TimePointGenerator(groupingMode: .countdownDate)
     
@@ -21,14 +21,18 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
         return getPointAt(date: Date())
     }
     
-    override public init(eventCache: EventCache) {
-        super.init(eventCache: eventCache)
+    let eventCache: EventCache
+    
+    public init(eventCache: EventCache) {
+       
+        self.eventCache = eventCache
         
-        Task {
-            await updatePoints()
-        }
+        
     }
     
+    public func setup() async {
+        await updatePoints()
+    }
     
     
     public func getPointAt(date: Date) -> TimePoint? {
@@ -40,34 +44,22 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
     private func updatePoints() async {
         let oldpoints = points
         var newResult = [TimePoint]()
-        var foundChanges = false
+        var foundChanges = true
         let events = await eventCache.getEvents()
         
         let newPoints = pointGen.generateTimePoints(for: events)
         
-        for point in newPoints {
-            if let oldMatch = points?.first(where: { $0.date == point.date }) {
-                let changes = oldMatch.updateInfo(from: point)
-                if changes { foundChanges = true }
-                newResult.append(oldMatch)
-            } else {
-                foundChanges = true
-                newResult.append(point)
-            }
-        }
+       
+            self.points = newPoints
+    
         
-        if newResult != oldpoints { foundChanges = true }
+     
         
-        if foundChanges {
-            self.points = newResult
-            DispatchQueue.main.async {
-                self.objectWillChange.send()
-                self.scheduleNextUpdate()
-            }
-        }
+        
+      
     }
     
-    private func scheduleNextUpdate() {
+   /* private func scheduleNextUpdate() {
         updateTimer?.invalidate()
         let now = Date()
         if let nextUpdateTime = points?.first(where: { $0.date > now })?.date {
@@ -77,17 +69,9 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
                 RunLoop.main.add(updateTimer!, forMode: .common)
             }
         }
-    }
+    } */
     
-    @objc private func handleTimerFired() {
-        Task {
-            await updatePoints()
-        }
-    }
+ 
     
-    public override func eventsChanged() {
-        Task {
-            await updatePoints()
-        }
-    }
+ 
 }

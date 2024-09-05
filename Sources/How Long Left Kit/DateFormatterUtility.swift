@@ -7,7 +7,6 @@
 
 import Foundation
 
-@MainActor
 public class DateFormatterUtility {
     
     public init() { }

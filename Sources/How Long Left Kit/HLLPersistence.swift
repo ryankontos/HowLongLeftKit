@@ -8,10 +8,7 @@
 import Foundation
 import CoreData
 
-@MainActor
 public class HLLPersistenceController {
-    //static let shared = HLLPersistenceController()
-
     public let persistentContainer: NSPersistentCloudKitContainer
     private let backgroundContext: NSManagedObjectContext
 
@@ -35,13 +32,12 @@ public class HLLPersistenceController {
         return persistentContainer.viewContext
     }
     
-    private var context: NSManagedObjectContext {
+    private func getMainContext() -> NSManagedObjectContext {
         return persistentContainer.viewContext
     }
-  
 
     public func saveContext() {
-        saveContext(context: context)
+        saveContext(context: getMainContext())
     }
 
     public func saveBackgroundContext() {
@@ -61,22 +57,12 @@ public class HLLPersistenceController {
         }
     }
 
-    public func fetchEntities<T: NSManagedObject>(entityName: String, sortDescriptors: [NSSortDescriptor] = [], predicate: NSPredicate? = nil) async -> [T] {
-        let fetchRequest = NSFetchRequest<T>(entityName: entityName)
-        fetchRequest.sortDescriptors = sortDescriptors
-        fetchRequest.predicate = predicate
 
-        do {
-            return try context.fetch(fetchRequest)
-        } catch {
-            fatalError("Failed to fetch entities: \(error)")
-        }
-    }
 
     public func deleteEntity(_ entity: NSManagedObject) {
-        context.perform {
-            self.context.delete(entity)
-            self.saveContext()
+        getMainContext().perform {
+            self.getMainContext().delete(entity)
+            self.saveContext(context: self.getMainContext())
         }
     }
 

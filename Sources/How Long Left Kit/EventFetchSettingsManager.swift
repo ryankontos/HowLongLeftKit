@@ -1,11 +1,10 @@
 import Foundation
 import Defaults
-@preconcurrency import Combine
+import Combine
 import EventKit
 import CoreData
 import os.log
 
-@MainActor
 public class EventFetchSettingsManager: ObservableObject {
   
     
@@ -35,50 +34,71 @@ public class EventFetchSettingsManager: ObservableObject {
     
     private let context: HLLPersistenceController
     
+    private var updateStream: AsyncStream<Void>!
+    private var updateContinuation: AsyncStream<Void>.Continuation!
+    
     public init(calendarSource: CalendarSource, config: Configuration, context: HLLPersistenceController) {
         self.configuration = config
         self.calendarSource = calendarSource
         self.context = context
         self.logger = Logger(subsystem: "howlongleftmac.eventfetchsettingsmanager", category: "\(config.domain)")
         
-        
-        
-        Task {
-            
-             fetchOrCreateDomainObject()
-             syncCalendarsWithDomain()
-             updateCalendarItems()
-             updateSubscriptions()
-            
-            for await _ in Defaults.updates(config.allowAllDayKey) {
-                DispatchQueue.main.async {
-                    self.objectWillChange.send()
+        self.updateStream = AsyncStream<Void> { continuation in
+                    self.updateContinuation = continuation
                 }
-            }
-        }
+        
         
     }
     
-    private func fetchOrCreateDomainObject() {
-        let fetchRequest: NSFetchRequest<CalendarStorageDomain> = CalendarStorageDomain.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "domainID == %@", configuration.domain)
+    public func setup() async {
         
-        do {
-            let results = try self.context.getViewContext().fetch(fetchRequest)
-            if let existingDomain = results.first {
-                self.domainObject = existingDomain
-            } else {
-                let newDomain = CalendarStorageDomain(context: self.context.getViewContext())
-                newDomain.domainID = configuration.domain
-                self.domainObject = newDomain
-                try self.context.getViewContext().save()
-            }
-        } catch {
-            handleError(error, message: "Error fetching or saving domain object")
+        fetchOrCreateDomainObject()
+        syncCalendarsWithDomain()
+        updateCalendarItems()
+        updateSubscriptions()
+       
+       
+        
+    }
+    
+    private func notifyUpdate() {
+            updateContinuation.yield()
         }
+
+        public func updates() -> AsyncStream<Void> {
+            return updateStream
+        }
+    
+    private func fetchOrCreateDomainObject() {
+        
+        self.context.performBackgroundTask { con in
+            
+            
+            let fetchRequest: NSFetchRequest<CalendarStorageDomain> = CalendarStorageDomain.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "domainID == %@", self.configuration.domain)
+            
+            do {
+                let results = try con.fetch(fetchRequest)
+                if let existingDomain = results.first {
+                    self.domainObject = existingDomain
+                } else {
+                    let newDomain = CalendarStorageDomain(context: con)
+                    newDomain.domainID = self.configuration.domain
+                    self.domainObject = newDomain
+                    
+                }
+            } catch {
+                self.handleError(error, message: "Error fetching or saving domain object")
+            }
+            
+        }
+       
     }
     
     private func syncCalendarsWithDomain() {
+        
+        
+        
         guard let domainObject = self.domainObject else { return }
         
         let allCalendars = calendarSource.eventStore.calendars(for: .event)
@@ -133,10 +153,7 @@ public class EventFetchSettingsManager: ObservableObject {
             self.calendarItems = validCalendarInfos
            
             
-            DispatchQueue.main.async {
-                self.objectWillChange.send()
-               
-            }
+            notifyUpdate()
             
             self.updateSubscriptions()
             
@@ -169,7 +186,7 @@ public class EventFetchSettingsManager: ObservableObject {
     private func calendarInfoDidChange(_ calendarInfo: CalendarInfo) {
         syncCalendarsWithDomain()
         updateCalendarItems()
-        objectWillChange.send()
+        notifyUpdate()
     }
     
     deinit {
@@ -180,6 +197,8 @@ public class EventFetchSettingsManager: ObservableObject {
     
     public func fetchAllowedCalendarInfos(matchingContextIn contexts: Set<String>) throws -> [CalendarInfo] {
 
+        
+        
         guard let domainObject = self.domainObject else { return [] }
        
         let fetchRequest: NSFetchRequest<CalendarInfo> = CalendarInfo.fetchRequest()
@@ -207,17 +226,18 @@ public class EventFetchSettingsManager: ObservableObject {
             let allowedCalendarIds = Set(allowedCalendarInfos.compactMap { $0.id })
             
             let allCalendars = calendarSource.eventStore.calendars(for: .event)
-            return allCalendars.filter { allowedCalendarIds.contains($0.calendarIdentifier) }
+            let cals = allCalendars.filter { allowedCalendarIds.contains($0.calendarIdentifier) }
+            return cals
         } catch {
             handleError(error, message: "Error fetching allowed calendars")
             return []
         }
     }
     
-    nonisolated public func updateForNewCals() {
-        Task {
-            await syncCalendarsWithDomain()
-        }
+    public func updateForNewCals() {
+        
+            syncCalendarsWithDomain()
+        
     }
 }
 

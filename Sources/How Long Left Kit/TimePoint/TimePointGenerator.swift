@@ -7,7 +7,6 @@
 
 import Foundation
 
-@MainActor
 class TimePointGenerator {
     
     private var groupMode: GroupMode

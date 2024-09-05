@@ -4,16 +4,15 @@
 //
 //  Created by Ryan on 2/5/2024.
 //
-
+/*
 import Foundation
 @preconcurrency import Combine
 
-@MainActor
 open class EventCacheObserver {
     
     let eventCache: EventCache
     
-    private var eventSubscription: AnyCancellable?
+    
     private let queue = DispatchQueue(label: "com.howlongleft.EventCacheObserver", attributes: .concurrent)
     
     public init(eventCache: EventCache) {
@@ -24,17 +23,20 @@ open class EventCacheObserver {
     open func eventsChanged() { }
     
     private final func observeEventChanges() {
-        eventSubscription = eventCache.objectWillChange
-            .receive(on: queue)
-            .sink(receiveValue: { [weak self] _ in
-               
-                self?.eventsChanged()
-                
-            })
+        
+        Task {
+            
+            for await _ in await eventCache.eventUpdateStream {
+                self.eventsChanged()
+            }
+            
+        }
+        
+       
     }
     
-    deinit {
-        eventSubscription?.cancel()
-    }
+    
 }
 
+
+*/

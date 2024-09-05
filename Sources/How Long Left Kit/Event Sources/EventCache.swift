@@ -1,17 +1,9 @@
-//
-//  EventCache.swift
-//  How Long Left Kit
-//
-//  Created by Ryan on 2/5/2024.
-//
-
 import Foundation
 import EventKit
-@preconcurrency import Combine
 import os.log
 
-@MainActor
-public class EventCache: ObservableObject {
+
+public class EventCache {
     
     let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "EventCache")
     
@@ -20,10 +12,7 @@ public class EventCache: ObservableObject {
     private weak var calendarReader: CalendarSource?
     private var stale = false
     
-    
-    private var eventStoreSubscription: AnyCancellable?
-    private var hiddenEventManagerSubscription: AnyCancellable?
-    private var calendarPrefsSubscription: AnyCancellable?
+
     
     private var calendarContexts: Set<String>
     
@@ -31,17 +20,24 @@ public class EventCache: ObservableObject {
     
     private weak var calendarProvider: EventFetchSettingsManager? {
         didSet {
-            setupCalendarsSubscription()
+            
         }
     }
     
     private weak var hiddenEventManager: StoredEventManager? {
         didSet {
-            setupHiddenEventManagerSubscription()
+            
         }
     }
     
     public var id: String
+    
+    private var eventUpdateStreamContinuation: AsyncStream<[Event]>.Continuation?
+    public lazy var eventUpdateStream: AsyncStream<[Event]> = {
+        AsyncStream { continuation in
+            eventUpdateStreamContinuation = continuation
+        }
+    }()
     
     public init(calendarReader: CalendarSource?, calendarProvider: EventFetchSettingsManager, calendarContexts: Set<String>, hiddenEventManager: StoredEventManager, id: String) {
         self.id = id
@@ -49,98 +45,72 @@ public class EventCache: ObservableObject {
         self.calendarProvider = calendarProvider
         self.calendarContexts = calendarContexts
         self.hiddenEventManager = hiddenEventManager
-       
-        
-        
         
         while calendarReader?.authorization == .notDetermined { }
         
-        setup()
         
     }
     
-    func setup()  {
+    public func setup() async {
         
-            setupEventStoreSubscription()
-            setupCalendarsSubscription()
-            setupHiddenEventManagerSubscription()
-            updateEvents()
+        
+        
+       // await setupEventStoreSubscription()
+       // await setupCalendarsSubscription()
+       // await setupHiddenEventManagerSubscription()
+        
+        await updateEvents()
+        
+       
+    }
+    
+    private func setupCalendarsSubscription() async {
+ 
+    
             
-        
-    }
-    
-    private func setupCalendarsSubscription() {
-        
-        guard let calendarProvider else { return }
-        calendarPrefsSubscription?.cancel()
-        calendarPrefsSubscription = nil
-        calendarPrefsSubscription = calendarProvider.objectWillChange
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                
-                
-                    
-                    self?.updateEvents()
-                
+            guard let calendarProvider else { return }
+            for await _ in calendarProvider.updates() {
+                await self.updateEvents()
             }
             
+        
+        
     }
     
-    private func setupHiddenEventManagerSubscription() {
-        
+    private func setupHiddenEventManagerSubscription() async {
         guard let hiddenEventManager else { return }
-        hiddenEventManagerSubscription?.cancel()
-        hiddenEventManagerSubscription = nil
-        hiddenEventManagerSubscription = hiddenEventManager.objectWillChange
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-               
-                
-                    
-                    self?.updateEvents()
-                
-            }
-            
+        
+        
+        
+                for await _ in hiddenEventManager.eventUpdateStream {
+                    await self.updateEvents()
+                }
+          
     }
     
-    
-    private func setupEventStoreSubscription() {
-        
+    private func setupEventStoreSubscription() async {
         guard let reader = calendarReader else { return }
         
-        self.eventStoreSubscription?.cancel()
-        self.eventStoreSubscription = nil
-        
-        eventStoreSubscription = NotificationCenter.default.publisher(for: .EKEventStoreChanged, object: reader.eventStore)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                
-               // guard let provider = self?.calendarProvider else { return }
-                    
-                Task {
-                    //await provider.updateForNewCals()
-                    self?.updateEvents()
-                }
-                
-                    
-                    
-                
-            }
-        
+       
             
+            for await _ in reader.updateStream {
+               await self.updateEvents()
+            }
+            
+        
+        
+        
     }
     
     func getEvents() async -> [Event] {
-        if eventCache == nil { updateEvents() }
-        if stale { updateEvents() }
+        if eventCache == nil { await updateEvents() }
+        if stale { await updateEvents() }
         return eventCache ?? []
     }
     
-    private func updateEvents() {
+    private func updateEvents() async {
         // Record start time
         let startTime = Date()
-        
-        //print("Updating events")
         
         guard let calendarProvider else {
             return
@@ -176,41 +146,31 @@ public class EventCache: ObservableObject {
         
         if foundChanges {
             self.eventCache = newEventCache
-           
-                self.objectWillChange.send()
-            
+            eventUpdateStreamContinuation?.yield(newEventCache)
         }
         
         // Record end time
         let endTime = Date()
         let timeInterval = endTime.timeIntervalSince(startTime)
-        
         // Print duration
         //print("Time taken to update events: \(timeInterval) seconds")
     }
-
     
     private func updateEvent(Event: inout Event, from ekEvent: EKEvent) -> Bool {
-        
         var changes = false
-     
+        
         updateIfNeeded(&Event.title, compareTo: ekEvent.title, flag: &changes)
         updateIfNeeded(&Event.startDate, compareTo: ekEvent.startDate, flag: &changes)
         updateIfNeeded(&Event.endDate, compareTo: ekEvent.endDate, flag: &changes)
         updateIfNeeded(&Event.calendarID, compareTo: ekEvent.calendar.calendarIdentifier, flag: &changes)
-        updateIfNeeded(&Event.structuredLocation, compareTo: ekEvent.structuredLocation, flag: &changes)
+        updateIfNeeded(&Event.locationName, compareTo: ekEvent.location, flag: &changes)
         return changes
     }
     
     deinit {
+        print("EventCache deinit")
         
-        print("Eventcache deinit")
-        
-        eventStoreSubscription?.cancel()
-        eventStoreSubscription = nil
-        
-        calendarPrefsSubscription?.cancel()
-        calendarPrefsSubscription = nil
+       
+        eventUpdateStreamContinuation?.finish()
     }
-    
 }
