@@ -37,10 +37,8 @@ public class InfoStringManager: ObservableObject {
     }
     
     private func updateInfo() {
-        
-        let newString = stringGenerator.getString(from: event, at: Date())
+        let newString = self.stringGenerator.getString(from: self.event, at: Date())
         self.infoString = newString
-        
     }
 }
 

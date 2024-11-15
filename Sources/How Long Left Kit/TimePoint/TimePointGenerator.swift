@@ -17,14 +17,11 @@ class TimePointGenerator {
         self.includeMultiDayEvents = includeMultiDayEvents
     }
     
-    func generateFirstPoint(for events: [Event]) -> TimePoint {
-        
-       
-        return generateTimePoint(for: Date(), from: events)
-        
+    func generateFirstPoint(for events: [Event], withCacheSummaryHash hash: String) -> TimePoint {
+        return generateTimePoint(for: Date(), from: events, withCacheSummaryHash: hash)
     }
     
-    func generateTimePoints(for events: [Event]) -> [TimePoint] {
+    func generateTimePoints(for events: [Event], withCacheSummaryHash hash: String) -> [TimePoint] {
         let now = Date()
        
         var timePoints = [TimePoint]()
@@ -33,14 +30,14 @@ class TimePointGenerator {
 
         for date in dates {
             if date >= now {
-                timePoints.append(generateTimePoint(for: date, from: events))
+                timePoints.append(generateTimePoint(for: date, from: events, withCacheSummaryHash: hash))
             }
         }
         
         return timePoints
     }
     
-    func generateTimePoint(for date: Date, from events: [Event]) -> TimePoint {
+    func generateTimePoint(for date: Date, from events: [Event], withCacheSummaryHash hash: String) -> TimePoint {
         var currentArray = [Event]()
         var upcomingArray = [Event]()
         
@@ -58,7 +55,7 @@ class TimePointGenerator {
         let grouped = groupEventsByDate(events, at: date, by: .countdownDate)
         let upcomingGroup = groupEventsByDate(upcomingArray, at: date, by: .start)
         
-        return TimePoint(date: date, inProgressEvents: currentArray, upcomingEvents: upcomingArray, allGroupedByCountdownDate: grouped, upcomingGroupedByStart: upcomingGroup)
+        return TimePoint(date: date, cacheSummaryHash: hash, inProgressEvents: currentArray, upcomingEvents: upcomingArray, allGroupedByCountdownDate: grouped, upcomingGroupedByStart: upcomingGroup)
     }
     
     private func groupEventsByDate(_ events: [Event], at date: Date = Date(), by: GroupMode) -> [EventDate] {
@@ -107,5 +104,4 @@ class TimePointGenerator {
         case start
         case countdownDate
     }
-    
 }

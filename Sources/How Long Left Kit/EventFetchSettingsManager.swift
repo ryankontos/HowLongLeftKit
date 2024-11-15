@@ -145,17 +145,7 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
         cancellables.forEach { $0.cancel() }
         cancellables.removeAll()
         
-       /* calendarItems.forEach { calendarInfo in
-            calendarInfo.objectWillChange
-            
-                .sink { [ _ in
-                    
-                    DispatchQueue.main.async {
-                        //self?.calendarInfoDidChange(calendarInfo)
-                    }
-                }
-                .store(in: &cancellables)
-        } */
+    
     }
     
     private func calendarInfoDidChange(_ calendarInfo: CalendarInfo) {
@@ -177,22 +167,27 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
         let fetchRequest: NSFetchRequest<CalendarInfo> = CalendarInfo.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "domain == %@", domainObject)
        
-        let existingCalendarInfos = try Self.context.fetch(fetchRequest)
-        let allowedCalendarInfos = existingCalendarInfos.filter { calendarInfo in
-            guard let calendarContexts = calendarInfo.contexts as? Set<CalendarContext> else {
-                return false
+        return try EventFetchSettingsManager.context.performAndWait {
+            
+            let existingCalendarInfos = try Self.context.fetch(fetchRequest)
+            let allowedCalendarInfos = existingCalendarInfos.filter { calendarInfo in
+                guard let calendarContexts = calendarInfo.contexts as? Set<CalendarContext> else {
+                    return false
+                }
+                
+                let calendarContextIds = calendarContexts.compactMap { $0.id }
+                return contexts.isSubset(of: calendarContextIds)
             }
             
-            let calendarContextIds = calendarContexts.compactMap { $0.id }
-            return contexts.isSubset(of: calendarContextIds)
+            return allowedCalendarInfos
         }
        
-        return allowedCalendarInfos
+        
     }
 
     
     public func getAllowedCalendars(matchingContextIn contexts: Set<String>) -> [EKCalendar] {
-        guard let domainObject = self.domainObject else { return [] }
+        guard self.domainObject != nil else { return [] }
         
         do {
             let allowedCalendarInfos = try fetchAllowedCalendarInfos(matchingContextIn: contexts)
@@ -259,7 +254,6 @@ extension EventFetchSettingsManager {
         if let contexts = calendarInfo.contexts as? Set<CalendarContext> {
             for contextID in actualRemoveContextIDs {
                 if !containsContext(calendarInfo: calendarInfo, contextID: contextID) {
-                    //print("Context \(contextID) does not exist in CalendarInfo \(calendarInfo.title ?? "unknown")")
                     continue
                 }
 
@@ -269,18 +263,9 @@ extension EventFetchSettingsManager {
             }
         }
         
-       
-        
         if notify {
-           
-               
-                self.saveContext()
-                self.updateCalendarItems()
-              //  print("Sending object will change for update update")
-              
-                //self.objectWillChange.send()
-                
-            
+            self.saveContext()
+            self.updateCalendarItems()
         }
         
     }

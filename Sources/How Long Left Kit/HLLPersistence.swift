@@ -11,8 +11,8 @@ import CoreData
 public class HLLPersistenceController {
     static let shared = HLLPersistenceController()
 
-    private let persistentContainer: NSPersistentCloudKitContainer
-    private let backgroundContext: NSManagedObjectContext
+    public let persistentContainer: NSPersistentCloudKitContainer
+    public  let backgroundContext: NSManagedObjectContext
 
     private init() {
         guard let modelURL = Bundle.module.url(forResource: "HowLongLeftDataModel", withExtension: "momd"),

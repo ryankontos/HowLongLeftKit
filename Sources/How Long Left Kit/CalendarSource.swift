@@ -7,6 +7,7 @@
 
 import Foundation
 import EventKit
+import CryptoKit
 
 public class CalendarSource: ObservableObject {
     
@@ -24,7 +25,7 @@ public class CalendarSource: ObservableObject {
         }
     }
     
-    func requestCalendarAccess() async -> Bool {
+    public func requestCalendarAccess() async -> Bool {
         
         var optionalResult: Bool?
         
@@ -42,29 +43,78 @@ public class CalendarSource: ObservableObject {
         return result
     }
     
-    func getEvents(from calendars: [EKCalendar]) -> [EKEvent] {
-        
+    func getEvents(from calendars: [EKCalendar]) -> EventFetchResult {
+
         if calendars.isEmpty {
-            return []
+            return EventFetchResult(events: [], calendars: [])
         }
-        
-        //print("Get events from \(calendars.count) calendars")
-        
+
+        let calendar = Calendar.current
+
+        // Get the current date
         let now = Date()
-        let start = Calendar.current.date(byAdding: .day, value: -2, to: now)!
-        let end = Calendar.current.date(byAdding: .day, value: 14, to: now)!
-        
+
+        // Set the start date to midnight two days ago
+        let start = calendar.startOfDay(for: calendar.date(byAdding: .day, value: -2, to: now)!)
+
+        // Set the end date to the last second of the day 14 days from now
+        let endDate = calendar.date(byAdding: .day, value: 14, to: now)!
+        let end = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: endDate)!
+
+        // Create the event store request
         let request = eventStore.predicateForEvents(withStart: start, end: end, calendars: calendars)
         let events = eventStore.events(matching: request)
-        
-        //print("Get events returning \(events.count) events")
-        
-        return events
-        
+
+        // Return the result with start and end
+        return EventFetchResult(events: events, calendars: calendars, predicateStart: start, predicateEnd: end)
     }
     
     public func lookupCalendar(withID id: String) -> EKCalendar? {
         return eventStore.calendar(withIdentifier: id)
     }
+    
+}
+
+
+struct EventFetchResult {
+    var events: [EKEvent]
+    var calendars: [EKCalendar]
+    var predicateStart: Date?
+    var predicateEnd: Date?
+
+    func getHash() -> String {
+            var dataToHash = ""
+
+        
+            for event in events {
+                 let id = String(event.id)
+                    dataToHash += id
+            
+            }
+
+            // Collect calendar identifiers
+            for calendar in calendars {
+                dataToHash += calendar.calendarIdentifier
+            }
+
+            // Add predicateStart and predicateEnd if they exist
+            if let start = predicateStart {
+                dataToHash += String(start.timeIntervalSince1970)
+            }
+            
+            if let end = predicateEnd {
+                dataToHash += String(end.timeIntervalSince1970)
+            }
+
+            // Ensure there is data to hash
+            guard !dataToHash.isEmpty else { return "" }
+            
+            // Create a SHA-256 hash of the combined string
+            let hashData = SHA256.hash(data: Data(dataToHash.utf8))
+
+            // Convert the hash to a string
+            return hashData.map { String(format: "%02x", $0) }.joined()
+        }
+    
     
 }

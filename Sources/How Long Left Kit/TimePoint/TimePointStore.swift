@@ -9,25 +9,26 @@ import Foundation
 import Combine
 import os.log
 
+@MainActor
 public class TimePointStore: EventCacheObserver, ObservableObject {
     
     private let pointGen = TimePointGenerator(groupingMode: .countdownDate)
+    private lazy var logger = Logger(subsystem: "HowLongLeftMac", category: "TimePointStore.\(self.eventCache.id)")
+    private var updateTimer: Timer?
     
-    lazy var logger = Logger(subsystem: "HowLongLeftMac", category: "TimePointStore.\(self.eventCache.id)")
-    
-    var points: [TimePoint]?
-    var updateTimer: Timer?
+    @Published public var points: [TimePoint] = []
     
     public var currentPoint: TimePoint? {
         return getPointAt(date: Date())
     }
     
     override public init(eventCache: EventCache) {
-       
         super.init(eventCache: eventCache)
-        updatePoints()
-      //  logger.info("Init TimePointStore")
         
+        Task {
+            
+           await updatePoints()
+        }
     }
     
     deinit {
@@ -35,65 +36,73 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
     }
     
     public func getPointAt(date: Date) -> TimePoint? {
-        let point = points?.last(where: { $0.date < date })
-        if point == nil { return points?.first }
-        return point
+        return points.last(where: { $0.date < date }) ?? points.first
     }
     
-    private func updatePoints() {
+    private func updatePoints() async {
+        let events = await eventCache.getEvents()
         
-        //print("Updating points")
         
-        let oldpoints = points
-        var newResult = [TimePoint]()
-        var foundChanges = false
-        let events = eventCache.getEvents()
+        let newPoints = pointGen.generateTimePoints(for: events, withCacheSummaryHash: eventCache.cacheSummaryHash ?? "")
         
-      //  logger.info("Updating points got \(events.count)")
-        
-        //print("Updating points got \(events.count)")
-        
-        let newPoints = pointGen.generateTimePoints(for: events)
-        
-        for point in newPoints {
-            if let oldMatch = points?.first(where: { $0.date == point.date }) {
-                let changes = oldMatch.updateInfo(from: point)
-                if changes { foundChanges = true }
-                newResult.append(oldMatch)
-            } else {
-                foundChanges = true
-                newResult.append(point)
-            }
-        }
-        
-        if newResult != oldpoints { foundChanges = true }
+        let foundChanges = mergePoints(newPoints)
         
         if foundChanges {
-           // logger.info("Setting points to array with \(newResult.count)")
-            self.points = newResult
             DispatchQueue.main.async {
-                self.objectWillChange.send()
                 self.scheduleNextUpdate()
             }
         }
     }
     
+    
+    private func mergePoints(_ newPoints: [TimePoint]) -> Bool {
+        var updatedPoints = [TimePoint]()
+        var changesDetected = false
+        
+        for newPoint in newPoints {
+            if let existingPoint = points.first(where: { $0.date == newPoint.date }) {
+                if existingPoint.updateInfo(from: newPoint) {
+                    changesDetected = true
+                }
+                updatedPoints.append(existingPoint)
+            } else {
+                updatedPoints.append(newPoint)
+                changesDetected = true
+            }
+        }
+        
+        
+        if updatedPoints != points {
+            points = updatedPoints
+            objectWillChange.send()
+            changesDetected = true
+        }
+        
+        return changesDetected
+    }
+    
     private func scheduleNextUpdate() {
         updateTimer?.invalidate()
-        let now = Date()
-        if let nextUpdateTime = points?.first(where: { $0.date > now })?.date {
-            let now = Date()
-            if nextUpdateTime > now {
-                updateTimer = Timer.scheduledTimer(withTimeInterval: nextUpdateTime.timeIntervalSince(now), repeats: false) { [weak self] _ in
-                    self?.updatePoints()
-                }
-                RunLoop.main.add(updateTimer!, forMode: .common)
+        
+        guard let nextUpdateTime = points.first(where: { $0.date > Date() })?.date else { return }
+        
+        let timeInterval = nextUpdateTime.timeIntervalSinceNow
+        guard timeInterval > 0 else { return }
+        
+        updateTimer = Timer.scheduledTimer(withTimeInterval: timeInterval, repeats: false) { [weak self] _ in
+            Task {
+                await self?.updatePoints()
             }
+        }
+        
+        if let updateTimer = updateTimer {
+            RunLoop.main.add(updateTimer, forMode: .common)
         }
     }
     
-   
-    
-    public override func eventsChanged() { updatePoints() }
-   
+    public override func eventsChanged() {
+        Task {
+            await updatePoints()
+        }
+    }
 }

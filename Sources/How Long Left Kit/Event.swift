@@ -98,6 +98,10 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
         case upcoming
     }
     
+    public static var example: Event {
+        return Event(title: "Example Event", start: Date(), end: Date().addingTimeInterval(3600))
+    }
+    
 }
 
 

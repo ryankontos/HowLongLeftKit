@@ -6,11 +6,20 @@
 //
 
 import Foundation
-import HowLongLeftKit
 
 public struct EventGroups {
     
-    var headerGroups = [TitledEventGroup]()
-    var upcomingGroups = [TitledEventGroup]()
+    public init(headerGroups: [TitledEventGroup], upcomingGroups: [TitledEventGroup]) {
+        self.headerGroups = headerGroups
+        self.upcomingGroups = upcomingGroups
+    }
+
+    public var isEmpty: Bool {
+        return headerGroups.isEmpty && upcomingGroups.isEmpty
+        
+    }
+    
+    public var headerGroups = [TitledEventGroup]()
+    public var upcomingGroups = [TitledEventGroup]()
     
 }

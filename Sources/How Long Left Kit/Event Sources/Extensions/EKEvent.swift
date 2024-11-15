@@ -8,10 +8,14 @@
 import Foundation
 import EventKit
 
-extension EKEvent: Identifiable {
+extension EKEvent: @retroactive Identifiable {
     
     public var id: String {
         return "\(eventIdentifier!)\(startDate!)\(endDate!)\(title!)\(self.calendar.calendarIdentifier)"
+    }
+    
+    public var modifiedOrCreatedDate: Date {
+        return self.lastModifiedDate ?? self.creationDate ?? self.startDate
     }
     
 }

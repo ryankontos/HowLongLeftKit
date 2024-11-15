@@ -11,13 +11,15 @@ public class TitledEventGroup: Identifiable {
     
     public init(_ title: String?, _ info: String?, _ events: [Event]) {
         self.title = title
-        self.events = events
+        self.events = events.filter({ $0.isAllDay == false })
+        self.allDayEvents = events.filter({ $0.isAllDay == true })
         self.info = info
     }
     
     public var title: String?
     public var info: String?
     
+    public var allDayEvents: [Event]
     public var events: [Event]
     
     public var flags = [Flags]()
@@ -29,6 +31,7 @@ public class TitledEventGroup: Identifiable {
     
     public enum Flags {
         
+        case headerSection
         case prominentSection
         
     }

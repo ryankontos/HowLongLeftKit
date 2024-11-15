@@ -16,7 +16,7 @@ import AppKit
 
 public extension CGColor {
     // Convert CGColor to Hex String
-    public func toHex() -> String? {
+    func toHex() -> String? {
         guard let components = self.components, components.count >= 3 else {
             return nil
         }
@@ -34,7 +34,7 @@ public extension CGColor {
     }
 
     // Convert Hex String to CGColor
-    public static func fromHex(_ hex: String) -> CGColor? {
+    static func fromHex(_ hex: String) -> CGColor? {
         var hexString = hex.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
         
         if hexString.hasPrefix("#") {

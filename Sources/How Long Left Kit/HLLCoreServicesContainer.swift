@@ -20,9 +20,9 @@ open class HLLCoreServicesContainer: ObservableObject {
     
     public let timerContainer = GlobalTimerContainer()
     
-    public init() {
+    public init(id: String) {
         
-        let domainString = "HowLongLeft_App"
+        let domainString = "HowLongLeft_CoreServicesDomain_\(id)"
         
         calendarReader = CalendarSource(requestCalendarAccessImmediately: true)
         
@@ -34,7 +34,7 @@ open class HLLCoreServicesContainer: ObservableObject {
         
         selectedEventManager = StoredEventManager(domain: "\(domainString)_SelectedEvent", limit: 1)
         
-        eventCache = EventCache(calendarReader: calendarReader, calendarProvider: calendarPrefsManager, calendarContexts: [HLLStandardCalendarContexts.app.rawValue], hiddenEventManager: hiddenEventManager, id: "DefaultContainer")
+        eventCache = EventCache(calendarReader: calendarReader, calendarProvider: calendarPrefsManager, calendarContexts: [HLLStandardCalendarContexts.app.rawValue], hiddenEventManager: hiddenEventManager, id: "\(domainString)_EventCache")
         pointStore = TimePointStore(eventCache: eventCache)
         
         
