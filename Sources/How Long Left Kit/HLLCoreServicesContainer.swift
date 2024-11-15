@@ -1,5 +1,5 @@
 //
-//  DefaultContainer.swift
+//  HLLCoreServicesContainer.swift
 //  How Long Left
 //
 //  Created by Ryan on 10/5/2024.
@@ -7,7 +7,7 @@
 
 import Foundation
 
-open class DefaultContainer: ObservableObject {
+open class HLLCoreServicesContainer: ObservableObject {
     
     public let calendarReader: CalendarSource
     public let calendarPrefsManager: EventFetchSettingsManager
