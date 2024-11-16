@@ -85,10 +85,8 @@ public class EventCache: ObservableObject {
             .sink { [weak self] _ in
                 print("Event store changed")
                 self?.calendarProvider?.updateForNewCals()
-                
               
                 DispatchQueue.main.async {
-                    
                     self?.updateEvents()
                 }
                 
@@ -118,10 +116,7 @@ public class EventCache: ObservableObject {
         hiddenEventManagerSubscription = hiddenEventManager.objectWillChange
             .receive(on: DispatchQueue.main)
             .sink { [self] in
-                
-         
-                     self.updateEvents()
-                
+                self.updateEvents()
             }
     }
     
@@ -139,53 +134,52 @@ public class EventCache: ObservableObject {
     }
     
    
-    
     private func updateEvents() {
         guard let calendarProvider, let calendarReader else { return }
-        
-        var foundChanges = false
-        let oldCache = eventCache
-        var newEventCache = [Event]()
+
+        // Fetch new events
         let fetchResult = calendarReader.getEvents(from: calendarProvider.getAllowedCalendars(matchingContextIn: calendarContexts))
-        
-        
         let newEvents = fetchResult.events
             .filter { event in calendarProvider.getAllDayAllowed() || !event.isAllDay }
+
+        // Create a dictionary for new events keyed by their ID
+        let newEventsDict = Dictionary(uniqueKeysWithValues: newEvents.map { ($0.id, $0) })
         
-     
-        
-        for ekEvent in newEvents {
-            if var existingEvent = oldCache?.first(where: { ekEvent.id == $0.id }) {
+        // Create a dictionary for the current cache keyed by event ID
+        let oldEventsDict = eventCache?.reduce(into: [String: Event]()) { $0[$1.id] = $1 } ?? [:]
+
+        var newEventCache = [Event]()
+        var foundChanges = false
+
+        // Update existing events and add new events
+        for (eventID, ekEvent) in newEventsDict {
+            if var existingEvent = oldEventsDict[eventID] {
                 let changes = updateEvent(&existingEvent, from: ekEvent)
                 foundChanges = foundChanges || changes
                 newEventCache.append(existingEvent)
             } else {
                 foundChanges = true
-                
-                let event = Event(event: ekEvent)
-                event.setColor(color: Color(ekEvent.calendar.color))
-                
-                newEventCache.append(event)
+                let newEvent = Event(event: ekEvent)
+                newEvent.setColor(color: Color(ekEvent.calendar.color))
+                newEventCache.append(newEvent)
             }
         }
-        
-        let hashString = String(fetchResult.getHash())
-        
-        
-        
+
+        // Detect deletions by checking for events in old cache that are not in newEventsDict
+        for oldEventID in oldEventsDict.keys where newEventsDict[oldEventID] == nil {
+            foundChanges = true
+            logger.debug("Event deleted: \(oldEventID)")
+        }
+
+        // Update the cache if there are changes
         if foundChanges {
-           // print("Found changes in the event cache.")
             eventCache = newEventCache
-            cacheSummaryHash = hashString
+            cacheSummaryHash = String(fetchResult.getHash())
             stale = false
-            
-            
             DispatchQueue.main.async { self.objectWillChange.send() }
-        } else {
-            
         }
     }
-    
+
     private func calculateHash(for dates: [Date]) -> String {
         let concatenatedDates = dates.map { String($0.timeIntervalSinceReferenceDate) }.joined(separator: " ")
         let hashedData = SHA256.hash(data: concatenatedDates.data(using: .utf8)!)
