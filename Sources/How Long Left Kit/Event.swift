@@ -8,6 +8,10 @@
 import Foundation
 import EventKit
 
+#if canImport(SwiftUI)
+import SwiftUI
+#endif
+
 public class Event: ObservableObject, Identifiable, Hashable, Equatable {
     
     @Published public var title: String
@@ -49,8 +53,6 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
         self.calendarID = event.calendar?.calendarIdentifier ?? "Nil"
         self.isAllDay = event.isAllDay
         self.structuredLocation = event.structuredLocation
-       
-        
     }
     
     public init(title: String, start: Date, end: Date, isAllDay: Bool = false) {
@@ -101,6 +103,16 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
     public static var example: Event {
         return Event(title: "Example Event", start: Date(), end: Date().addingTimeInterval(3600))
     }
+    
+    #if canImport(SwiftUI)
+    
+    internal func setColor(color: Color) {
+        self.color = color
+    }
+    
+    public private(set) var color: Color = .blue
+    
+    #endif
     
 }
 

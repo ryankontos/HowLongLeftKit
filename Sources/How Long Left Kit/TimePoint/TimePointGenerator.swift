@@ -8,13 +8,10 @@
 import Foundation
 
 class TimePointGenerator {
+
     
-    private var groupMode: GroupMode
-    private var includeMultiDayEvents: Bool
-    
-    init(groupingMode: GroupMode, includeMultiDayEvents: Bool = true) {
-        self.groupMode = groupingMode
-        self.includeMultiDayEvents = includeMultiDayEvents
+    init() {
+        
     }
     
     func generateFirstPoint(for events: [Event], withCacheSummaryHash hash: String) -> TimePoint {
@@ -48,60 +45,14 @@ class TimePointGenerator {
                 upcomingArray.append(event)
             }
         }
-       
+        
         currentArray = currentArray.sortedByEndDate()
         upcomingArray = upcomingArray.sortedByStartDate()
         
-        let grouped = groupEventsByDate(events, at: date, by: .countdownDate)
-        let upcomingGroup = groupEventsByDate(upcomingArray, at: date, by: .start)
-        
-        return TimePoint(date: date, cacheSummaryHash: hash, inProgressEvents: currentArray, upcomingEvents: upcomingArray, allGroupedByCountdownDate: grouped, upcomingGroupedByStart: upcomingGroup)
+        return TimePoint(date: date, cacheSummaryHash: hash, inProgressEvents: currentArray, upcomingEvents: upcomingArray)
     }
+
+   
     
-    private func groupEventsByDate(_ events: [Event], at date: Date = Date(), by: GroupMode) -> [EventDate] {
-        var eventDictionary = [Date: [Event]]()
-        
-        for event in events {
-            var groupUsing: Date
-            
-            switch by {
-            case .start:
-                groupUsing = event.startDate
-            case .countdownDate:
-                groupUsing = event.countdownDate(at: date)
-            }
-            
-            if includeMultiDayEvents {
-                let calendar = Calendar.current
-                let startOfDay = calendar.startOfDay(for: groupUsing)
-                let endOfDay = calendar.startOfDay(for: event.endDate)
-                var currentDate = startOfDay
-                
-                while currentDate <= endOfDay {
-                    if eventDictionary[currentDate] != nil {
-                        eventDictionary[currentDate]?.append(event)
-                    } else {
-                        eventDictionary[currentDate] = [event]
-                    }
-                    currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
-                }
-            } else {
-                let startOfDay = Calendar.current.startOfDay(for: groupUsing)
-                if eventDictionary[startOfDay] != nil {
-                    eventDictionary[startOfDay]?.append(event)
-                } else {
-                    eventDictionary[startOfDay] = [event]
-                }
-            }
-        }
-        
-        let eventDates = eventDictionary.map { EventDate(date: $0.key, events: $0.value) }
-        
-        return eventDates.sorted { $0.date < $1.date }
-    }
-    
-    enum GroupMode {
-        case start
-        case countdownDate
-    }
+  
 }

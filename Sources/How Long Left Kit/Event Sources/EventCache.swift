@@ -11,6 +11,7 @@ import Combine
 import os.log
 import CryptoKit
 import Defaults
+import SwiftUI
 
 public class EventCache: ObservableObject {
     
@@ -60,7 +61,7 @@ public class EventCache: ObservableObject {
         
         setupSubscriptions()
         Task {
-            await updateEvents()
+            updateEvents()
         }
         
         
@@ -132,7 +133,7 @@ public class EventCache: ObservableObject {
     
     func getEvents() async -> [Event] {
         if eventCache == nil || stale {
-            await updateEvents()
+            updateEvents()
         }
         return eventCache ?? []
     }
@@ -160,7 +161,11 @@ public class EventCache: ObservableObject {
                 newEventCache.append(existingEvent)
             } else {
                 foundChanges = true
-                newEventCache.append(Event(event: ekEvent))
+                
+                let event = Event(event: ekEvent)
+                event.setColor(color: Color(ekEvent.calendar.color))
+                
+                newEventCache.append(event)
             }
         }
         
@@ -169,7 +174,7 @@ public class EventCache: ObservableObject {
         
         
         if foundChanges {
-            print("Found changes in the event cache.")
+           // print("Found changes in the event cache.")
             eventCache = newEventCache
             cacheSummaryHash = hashString
             stale = false
@@ -194,6 +199,7 @@ public class EventCache: ObservableObject {
         updateIfNeeded(&event.endDate, compareTo: ekEvent.endDate, flag: &changes)
         updateIfNeeded(&event.calendarID, compareTo: ekEvent.calendar.calendarIdentifier, flag: &changes)
         updateIfNeeded(&event.structuredLocation, compareTo: ekEvent.structuredLocation, flag: &changes)
+        event.setColor(color: Color(ekEvent.calendar.color))
         return changes
     }
     

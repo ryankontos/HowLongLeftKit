@@ -21,18 +21,14 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
         return inProgressEvents + upcomingEvents
     }
     
-    @Published public var allGroupedByCountdownDate: [EventDate]
-    @Published public var upcomingGroupedByStart: [EventDate]
     
     public var id: Date { return date }
     
-    public init(date: Date, cacheSummaryHash: String, inProgressEvents: [Event], upcomingEvents: [Event], allGroupedByCountdownDate: [EventDate], upcomingGroupedByStart: [EventDate]) {
+    public init(date: Date, cacheSummaryHash: String, inProgressEvents: [Event], upcomingEvents: [Event]) {
         self.date = date
         self.cacheSummaryHash = cacheSummaryHash
         self.inProgressEvents = inProgressEvents.filter { $0.status(at: date) == .inProgress }
         self.upcomingEvents = upcomingEvents.filter { $0.status(at: date) == .upcoming }
-        self.allGroupedByCountdownDate = allGroupedByCountdownDate
-        self.upcomingGroupedByStart = upcomingGroupedByStart
 
         // Check that inProgressEvents only contain in-progress events
         for event in self.inProgressEvents {
@@ -95,8 +91,7 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
         var flag = false
         updateIfNeeded(&self.inProgressEvents, compareTo: new.inProgressEvents, flag: &flag)
         updateIfNeeded(&self.upcomingEvents, compareTo: new.upcomingEvents, flag: &flag)
-        updateIfNeeded(&self.allGroupedByCountdownDate, compareTo: new.allGroupedByCountdownDate, flag: &flag)
-        updateIfNeeded(&self.upcomingGroupedByStart, compareTo: new.upcomingGroupedByStart, flag: &flag)
+        
         return flag
     }
 

@@ -11,9 +11,9 @@ public class EventListGroupProvider {
     
     private let dateFormatter = DateFormatterUtility()
     
-    private var listSettings: EventListSettingsManager
+    private var listSettings: EventListSettingsFetcher
     
-    public init(settingsManager: EventListSettingsManager) {
+    public init(settingsManager: EventListSettingsFetcher) {
         self.listSettings = settingsManager
     }
     
@@ -22,6 +22,17 @@ public class EventListGroupProvider {
         var headerGroups = [TitledEventGroup]()
         var groups = [TitledEventGroup]()
         
+   
+        let upcomingEventDates = groupEventsByDate(point.upcomingEvents, by: .start, fillEmptyDates: listSettings.showEmptyUpcomingDays)
+        
+        var upcomingGrouped: [TitledEventGroup]? = upcomingEventDates.compactMap {
+            TitledEventGroup.makeGroup(
+                title: "\(dateFormatter.formattedDateString($0.date, allowRelative: true))",
+                info: dateFormatter.getDaysAwayString(from: $0.date, at: Date()),
+                events: $0.events,
+                makeIfEmpty: listSettings.showEmptyUpcomingDays
+            )
+        }
         
         
         // Include a pinned section if a specific event is selected
@@ -47,15 +58,9 @@ public class EventListGroupProvider {
         }
         
         if mode == .chronological {
-            let pointGroups = point.allGroupedByCountdownDate.compactMap {
-                TitledEventGroup.makeGroup(
-                    title: "\(dateFormatter.formattedDateString($0.date, allowRelative: true))",
-                    info: dateFormatter.getDaysAwayString(from: $0.date, at: Date()),
-                    events: $0.events,
-                    makeIfEmpty: listSettings.showEmptyUpcomingDays
-                )
-            }
-            return .init(headerGroups: headerGroups, upcomingGroups: pointGroups)
+            
+           
+            return .init(headerGroups: headerGroups, upcomingGroups: upcomingGrouped ?? [])
         }
         
         var onNowGroup: TitledEventGroup?
@@ -68,16 +73,10 @@ public class EventListGroupProvider {
             groups.insert(nextGroup, at: 0)
         }
         
-        var upcomingGrouped: [TitledEventGroup]?
+       
         
-        if listSettings.showUpcoming {
-            upcomingGrouped = point.upcomingGroupedByStart.map {
-                TitledEventGroup(
-                    "\(dateFormatter.formattedDateString($0.date, allowRelative: true))",
-                    dateFormatter.getDaysAwayString(from: $0.date, at: Date()),
-                    $0.events
-                )
-            }
+        if !listSettings.showUpcoming {
+            upcomingGrouped = nil
         }
         
         if listSettings.sortMode == .onNowFirst {
@@ -91,4 +90,57 @@ public class EventListGroupProvider {
         
         return .init(headerGroups: headerGroups, upcomingGroups: groups)
     }
+    
+    func groupEventsByDate(_ events: [Event], at date: Date = Date(), by groupingMode: GroupMode, fillEmptyDates: Bool = true) -> [EventDate] {
+        var eventDictionary = [Date: [Event]]()
+        let calendar = Calendar.current
+
+        for event in events {
+            var groupUsing: Date
+            
+            switch groupingMode {
+            case .start:
+                groupUsing = event.startDate
+            case .countdownDate:
+                groupUsing = event.countdownDate(at: date)
+            }
+            
+            if listSettings.showAllMultiDayEventDays {
+                let startOfDay = calendar.startOfDay(for: groupUsing)
+                let endOfDay = calendar.startOfDay(for: event.endDate)
+                var currentDate = startOfDay
+                
+                while currentDate <= endOfDay {
+                    eventDictionary[currentDate, default: []].append(event)
+                    currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
+                }
+            } else {
+                let startOfDay = calendar.startOfDay(for: groupUsing)
+                eventDictionary[startOfDay, default: []].append(event)
+            }
+        }
+
+        
+        if fillEmptyDates {
+            let allDates = eventDictionary.keys.sorted()
+            if let firstDate = allDates.first, let lastDate = allDates.last {
+                var currentDate = firstDate
+                while currentDate <= lastDate {
+                    if eventDictionary[currentDate] == nil {
+                        eventDictionary[currentDate] = []
+                    }
+                    currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
+                }
+            }
+        }
+
+        return eventDictionary.map { EventDate(date: $0.key, events: $0.value) }.sorted { $0.date < $1.date }
+    }
+
+    
+    public enum GroupMode {
+        case start
+        case countdownDate
+    }
+    
 }

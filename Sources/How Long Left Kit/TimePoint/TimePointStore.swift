@@ -12,7 +12,7 @@ import os.log
 @MainActor
 public class TimePointStore: EventCacheObserver, ObservableObject {
     
-    private let pointGen = TimePointGenerator(groupingMode: .countdownDate)
+    private let pointGen = TimePointGenerator()
     private lazy var logger = Logger(subsystem: "HowLongLeftMac", category: "TimePointStore.\(self.eventCache.id)")
     private var updateTimer: Timer?
     

@@ -14,18 +14,25 @@ public class TitledEventGroup: Identifiable {
         self.events = events.filter({ $0.isAllDay == false })
         self.allDayEvents = events.filter({ $0.isAllDay == true })
         self.info = info
+        self.combinedEvents = events
     }
     
     public var title: String?
     public var info: String?
     
-    public var allDayEvents: [Event]
-    public var events: [Event]
+    public var combinedEvents: [Event] // All events
+    
+    public var allDayEvents: [Event] // All day events
+    public var events: [Event] // Non all day events
     
     public var flags = [Flags]()
     
     static public func makeGroup(title: String?, info: String?, events: [Event], makeIfEmpty: Bool) -> TitledEventGroup? {
-        guard !events.isEmpty || makeIfEmpty else { return nil }
+        
+        if events.isEmpty, makeIfEmpty == false {
+            return nil
+        }
+        
         return TitledEventGroup(title, info, events)
     }
     

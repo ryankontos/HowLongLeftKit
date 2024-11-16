@@ -7,8 +7,6 @@
 
 import Foundation
 import Defaults
-
-import Foundation
 import Combine
 
 public class EventListSettingsManager: ObservableObject {
@@ -86,6 +84,10 @@ public class EventListSettingsManager: ObservableObject {
         get { get(sortKey) }
         set { set(sortKey, value: newValue) }
     }
+    
+    public var showAllMultiDayEventDays: Bool {
+        return true
+    }
 }
 
 
@@ -97,4 +99,22 @@ public enum EventListSortMode: Int, Defaults.Serializable {
     case chronological
     
     
+}
+
+
+// Define a protocol for fetching settings
+public protocol EventListSettingsFetcher {
+    var showInProgress: Bool { get }
+    var showInProgressWhenEmpty: Bool { get }
+    var showUpcoming: Bool { get }
+    var upcomingDaysLimit: Int { get }
+    var showEmptyUpcomingDays: Bool { get }
+    var sortMode: EventListSortMode { get }
+    var showAllMultiDayEventDays: Bool { get }
+    
+}
+
+// Extend EventListSettingsManager to conform to the protocol
+extension EventListSettingsManager: EventListSettingsFetcher {
+    // No additional implementation needed since the properties already exist
 }
