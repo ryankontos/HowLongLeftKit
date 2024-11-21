@@ -94,6 +94,11 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
         
         return flag
     }
+    
+    public static func makeEmpty() -> TimePoint {
+        return TimePoint(date: Date(), cacheSummaryHash: "", inProgressEvents: [], upcomingEvents: [])
+    }
+        
 
 }
 

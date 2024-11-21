@@ -130,7 +130,7 @@ public class StoredEventManager: ObservableObject {
         do {
             try context.save()
         } catch {
-            print("Failed to save new HiddenEventInfo: \(error)")
+            //print("Failed to save new HiddenEventInfo: \(error)")
         }
     }
     
@@ -161,7 +161,7 @@ public class StoredEventManager: ObservableObject {
         do {
             try context.save()
         } catch {
-            print("Failed to delete HiddenEventInfo: \(error)")
+            //print("Failed to delete HiddenEventInfo: \(error)")
         }
     }
     
@@ -181,7 +181,7 @@ public class StoredEventManager: ObservableObject {
                 try context.save()
             }
         } catch {
-            print("Failed to remove oldest HiddenEventInfo: \(error)")
+            //print("Failed to remove oldest HiddenEventInfo: \(error)")
         }
     }
 }

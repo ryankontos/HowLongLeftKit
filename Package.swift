@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "HowLongLeftKit",
     platforms: [
-        .macOS(.v12), .iOS(.v17), .watchOS(.v10),
+        .macOS(.v13), .iOS(.v17), .watchOS(.v10),
     ],
     products: [
         .library(

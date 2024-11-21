@@ -7,6 +7,7 @@
 
 import Foundation
 
+@MainActor
 open class HLLCoreServicesContainer: ObservableObject {
     
     public let calendarReader: CalendarSource

@@ -41,24 +41,23 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
     
     private func updatePoints() async {
         let events = await eventCache.getEvents()
-        
-        
         let newPoints = pointGen.generateTimePoints(for: events, withCacheSummaryHash: eventCache.cacheSummaryHash ?? "")
         
         let foundChanges = mergePoints(newPoints)
-        
+
         if foundChanges {
             DispatchQueue.main.async {
                 self.scheduleNextUpdate()
             }
         }
     }
+
     
     
     private func mergePoints(_ newPoints: [TimePoint]) -> Bool {
         var updatedPoints = [TimePoint]()
         var changesDetected = false
-        
+
         for newPoint in newPoints {
             if let existingPoint = points.first(where: { $0.date == newPoint.date }) {
                 if existingPoint.updateInfo(from: newPoint) {
@@ -70,16 +69,19 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
                 changesDetected = true
             }
         }
-        
+
+        // Sort the points by date, oldest first
+        updatedPoints.sort { $0.date < $1.date }
         
         if updatedPoints != points {
             points = updatedPoints
             objectWillChange.send()
             changesDetected = true
         }
-        
+
         return changesDetected
     }
+
     
     private func scheduleNextUpdate() {
         updateTimer?.invalidate()
@@ -100,9 +102,9 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
         }
     }
     
-    public override func eventsChanged() {
-        Task {
+    public override func eventsChanged() async  {
+        
             await updatePoints()
-        }
+        
     }
 }

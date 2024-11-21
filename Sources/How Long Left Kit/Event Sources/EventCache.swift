@@ -65,7 +65,7 @@ public class EventCache: ObservableObject {
         }
         
         
-        waitForAuthorization()
+        //waitForAuthorization()
     }
     
     // MARK: - Setup Functions
@@ -81,9 +81,9 @@ public class EventCache: ObservableObject {
         
         eventStoreSubscription?.cancel()
         eventStoreSubscription = NotificationCenter.default.publisher(for: .EKEventStoreChanged, object: reader.eventStore)
-            .receive(on: DispatchQueue.global())
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                print("Event store changed")
+                //print("Event store changed")
                 self?.calendarProvider?.updateForNewCals()
               
                 DispatchQueue.main.async {
@@ -160,7 +160,11 @@ public class EventCache: ObservableObject {
             } else {
                 foundChanges = true
                 let newEvent = Event(event: ekEvent)
+                #if os(macOS)
                 newEvent.setColor(color: Color(ekEvent.calendar.color))
+                #else
+                newEvent.setColor(color: Color(ekEvent.calendar.cgColor))
+                #endif
                 newEventCache.append(newEvent)
             }
         }
@@ -193,7 +197,11 @@ public class EventCache: ObservableObject {
         updateIfNeeded(&event.endDate, compareTo: ekEvent.endDate, flag: &changes)
         updateIfNeeded(&event.calendarID, compareTo: ekEvent.calendar.calendarIdentifier, flag: &changes)
         updateIfNeeded(&event.structuredLocation, compareTo: ekEvent.structuredLocation, flag: &changes)
+        #if os(macOS)
         event.setColor(color: Color(ekEvent.calendar.color))
+        #else
+        event.setColor(color: Color(ekEvent.calendar.cgColor))
+        #endif
         return changes
     }
     

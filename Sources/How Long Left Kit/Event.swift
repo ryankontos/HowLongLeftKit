@@ -79,12 +79,13 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
 
         if currentDate < startDate {
             return .upcoming
-        } else if currentDate > endDate {
-            return .ended
-        } else {
+        } else if currentDate >= startDate && currentDate < endDate {
             return .inProgress
+        } else {
+            return .ended
         }
     }
+
     
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
@@ -101,7 +102,7 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
     }
     
     public static var example: Event {
-        return Event(title: "Example Event", start: Date(), end: Date().addingTimeInterval(3600))
+        return Event(title: "Example Event", start: Date(), end: Date().addingTimeInterval(3615))
     }
     
     #if canImport(SwiftUI)

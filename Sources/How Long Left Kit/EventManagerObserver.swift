@@ -20,14 +20,17 @@ open class EventCacheObserver {
         observeEventChanges()
     }
     
-    open func eventsChanged() { }
+    open func eventsChanged() async { }
     
     private final func observeEventChanges() {
         eventSubscription = eventCache.objectWillChange
             .receive(on: DispatchQueue.main)
             .sink(receiveValue: { [weak self] _ in
                 
-                    self?.eventsChanged()
+                Task {
+                
+               await self?.eventsChanged()
+            }
                 
             })
     }

@@ -239,7 +239,7 @@ extension EventFetchSettingsManager {
         // Handle adding contexts
         for contextID in actualAddContextIDs {
             if containsContext(calendarInfo: calendarInfo, contextID: contextID) {
-                //print("Context \(contextID) already exists in CalendarInfo \(calendarInfo.title ?? "unknown")")
+                ////print("Context \(contextID) already exists in CalendarInfo \(calendarInfo.title ?? "unknown")")
                 continue
             }
 
@@ -278,13 +278,13 @@ extension EventFetchSettingsManager {
             
         }
         
-        print("Batch updated contetxts")
+        //print("Batch updated contetxts")
         
      
             
             self.saveContext()
             self.updateCalendarItems()
-           // print("Sending object will change for batch update")
+           // //print("Sending object will change for batch update")
             //self.objectWillChange.send()
             
         
@@ -307,6 +307,6 @@ extension EventFetchSettingsManager {
     // Centralized error handling
     private func handleError(_ error: Error, message: String) {
         // Here we can use a logging framework or any error handling strategy
-        //print("\(message): \(error)")
+        ////print("\(message): \(error)")
     }
 }

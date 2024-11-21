@@ -13,7 +13,7 @@ public struct EventCountdownText: View {
     
     @ObservedObject private var infoStringGen: InfoStringManager
     
-    @ObservedObject private var event: Event
+    private var event: Event
     
     
     

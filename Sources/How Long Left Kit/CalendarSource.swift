@@ -25,20 +25,21 @@ public class CalendarSource: ObservableObject {
         }
     }
     
+    @MainActor
     public func requestCalendarAccess() async -> Bool {
         
         var optionalResult: Bool?
         
-        if #available(macOS 14.0, *) {
+        if #available(macOS 14.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *) {
              optionalResult = try? await eventStore.requestFullAccessToEvents()
         } else {
             optionalResult = try? await eventStore.requestAccess(to: .event)
         }
         let result = optionalResult ?? false
        
-        DispatchQueue.main.async {
+        
             self.objectWillChange.send()
-        }
+        
         
         return result
     }

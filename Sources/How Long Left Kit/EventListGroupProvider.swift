@@ -19,6 +19,8 @@ public class EventListGroupProvider {
     
     public func getGroups(from point: TimePoint, selected: Event?) -> EventGroups {
         
+        //print("Get event groups")
+        
         var headerGroups = [TitledEventGroup]()
         var groups = [TitledEventGroup]()
         
@@ -28,7 +30,7 @@ public class EventListGroupProvider {
         var upcomingGrouped: [TitledEventGroup]? = upcomingEventDates.compactMap {
             TitledEventGroup.makeGroup(
                 title: "\(dateFormatter.formattedDateString($0.date, allowRelative: true))",
-                info: dateFormatter.getDaysAwayString(from: $0.date, at: Date()),
+                info: nil,
                 events: $0.events,
                 makeIfEmpty: listSettings.showEmptyUpcomingDays
             )
@@ -51,11 +53,11 @@ public class EventListGroupProvider {
         var nextGroup: TitledEventGroup?
         
         // Create an optional group for the next upcoming event with a prominent flag
-        if let nextEvent = point.fetchSingleEvent(accordingTo: .soonestCountdownDate), nextEvent.status(at: point.date) == .upcoming {
+        /*if let nextEvent = point.fetchSingleEvent(accordingTo: .soonestCountdownDate), nextEvent.status(at: point.date) == .upcoming {
             let group = TitledEventGroup.makeGroup(title: "Next Up", info: nil, events: [nextEvent], makeIfEmpty: true)!
             group.flags = [.prominentSection]
             nextGroup = group
-        }
+        } */
         
         if mode == .chronological {
             

@@ -20,7 +20,6 @@ class TimePointGenerator {
     
     func generateTimePoints(for events: [Event], withCacheSummaryHash hash: String) -> [TimePoint] {
         let now = Date()
-       
         var timePoints = [TimePoint]()
         var dates = [Date()]
         dates.append(contentsOf: events.flatMap { [$0.startDate, $0.endDate] }.sorted())
@@ -31,8 +30,12 @@ class TimePointGenerator {
             }
         }
         
+        // Ensure time points are sorted by date
+        timePoints.sort { $0.date < $1.date }
+        
         return timePoints
     }
+
     
     func generateTimePoint(for date: Date, from events: [Event], withCacheSummaryHash hash: String) -> TimePoint {
         var currentArray = [Event]()
