@@ -9,6 +9,7 @@ import Foundation
 import EventKit
 import Combine
 
+@MainActor
 public protocol EventFilteringOptionsProvider: ObservableObject {
     var objectWillChange: ObservableObjectPublisher { get }
     func getAllowedCalendars(matchingContextIn contexts: Set<String>) -> [EKCalendar]

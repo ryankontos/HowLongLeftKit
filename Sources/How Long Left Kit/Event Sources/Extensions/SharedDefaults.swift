@@ -8,4 +8,4 @@
 import Foundation
 import Defaults
 
-let sharedDefaults = UserDefaults(suiteName: "group.ryankontos.howlongleft")!
+@MainActor let sharedDefaults = UserDefaults(suiteName: "group.ryankontos.howlongleft")!

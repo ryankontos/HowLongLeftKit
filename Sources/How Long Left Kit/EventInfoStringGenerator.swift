@@ -16,8 +16,12 @@ public protocol EventInfoStringGenerator {
 
 public class EventCountdownTextGenerator: EventInfoStringGenerator {
     
-    public init() {
-        
+    var showContext: Bool
+    var postional: Bool
+    
+    public init(showContext: Bool, postional: Bool) {
+        self.showContext = showContext
+        self.postional = postional
     }
     
     public func getString(from event: Event, at date: Date) -> String {
@@ -26,9 +30,11 @@ public class EventCountdownTextGenerator: EventInfoStringGenerator {
         case .ended:
             return "Ended"
         case .inProgress:
-            return "\(formatTimeInterval(to: event.endDate)) remaining"
+            let timeString = formatTimeInterval(to: event.endDate)
+            return showContext ? "\(timeString) remaining" : timeString
         case .upcoming:
-            return "in \(formatTimeInterval(to: event.startDate))"
+            let timeString = formatTimeInterval(to: event.startDate)
+            return showContext ? "in \(timeString)" : timeString
         }
     }
     
@@ -38,7 +44,7 @@ public class EventCountdownTextGenerator: EventInfoStringGenerator {
         
         let formatter = DateComponentsFormatter()
         formatter.allowedUnits = [.hour, .minute, .second]
-        formatter.unitsStyle = .abbreviated
+        formatter.unitsStyle = postional ? .positional : .abbreviated
         
         return formatter.string(from: interval) ?? ""
     }

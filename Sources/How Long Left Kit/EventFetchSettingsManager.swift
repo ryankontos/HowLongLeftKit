@@ -21,6 +21,7 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
         var defaultContextsForNonMatches: Set<String>
     }
     
+ 
     static let context = HLLPersistenceController.shared.viewContext
 
     public var configuration: Configuration
@@ -28,6 +29,7 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
     
     private let calendarSource: CalendarSource
     private var domainObject: CalendarStorageDomain?
+    @MainActor
     private var cancellables: Set<AnyCancellable> = []
     
     private let logger: Logger
@@ -45,8 +47,8 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
         
         Task {
             for await _ in Defaults.updates(config.allowAllDayKey) {
-                DispatchQueue.main.async {
-                    self.objectWillChange.send()
+                DispatchQueue.main.async { [weak self] in
+                    self?.objectWillChange.send()
                 }
             }
         }
@@ -127,9 +129,9 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
             self.calendarItems = validCalendarInfos
            
             
-            DispatchQueue.main.async {
-                self.objectWillChange.send()
-                self.updateSubscriptions()
+            DispatchQueue.main.async { [weak self] in
+                self?.objectWillChange.send()
+                self?.updateSubscriptions()
             }
             
         } catch {
@@ -153,12 +155,9 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
         updateCalendarItems()
         objectWillChange.send()
     }
+
     
-    deinit {
-        cancellables.forEach { $0.cancel() }
-        cancellables.removeAll()
-    }
-    
+ 
     
     public func fetchAllowedCalendarInfos(matchingContextIn contexts: Set<String>) throws -> [CalendarInfo] {
 

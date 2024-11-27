@@ -25,7 +25,7 @@ public class EventListGroupProvider {
         var groups = [TitledEventGroup]()
         
    
-        let upcomingEventDates = groupEventsByDate(point.upcomingEvents, by: .start, fillEmptyDates: listSettings.showEmptyUpcomingDays)
+        let upcomingEventDates = groupEventsByDate(point.upcomingEvents, by: .start, fillMode: .fillNextFortnight)
         
         var upcomingGrouped: [TitledEventGroup]? = upcomingEventDates.compactMap {
             TitledEventGroup.makeGroup(
@@ -93,7 +93,7 @@ public class EventListGroupProvider {
         return .init(headerGroups: headerGroups, upcomingGroups: groups)
     }
     
-    func groupEventsByDate(_ events: [Event], at date: Date = Date(), by groupingMode: GroupMode, fillEmptyDates: Bool = true) -> [EventDate] {
+    func groupEventsByDate(_ events: [Event], at date: Date = Date(), by groupingMode: GroupMode, fillMode: DateFillMode = .fillGaps) -> [EventDate] {
         var eventDictionary = [Date: [Event]]()
         let calendar = Calendar.current
 
@@ -122,8 +122,8 @@ public class EventListGroupProvider {
             }
         }
 
-        
-        if fillEmptyDates {
+        switch fillMode {
+        case .fillGaps:
             let allDates = eventDictionary.keys.sorted()
             if let firstDate = allDates.first, let lastDate = allDates.last {
                 var currentDate = firstDate
@@ -134,10 +134,28 @@ public class EventListGroupProvider {
                     currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
                 }
             }
+
+        case .fillNextFortnight:
+            let startOfToday = calendar.startOfDay(for: date)
+            var currentDate = startOfToday
+            let endOfFortnight = calendar.date(byAdding: .day, value: 14, to: startOfToday)!
+            
+            while currentDate <= endOfFortnight {
+                if eventDictionary[currentDate] == nil {
+                    eventDictionary[currentDate] = []
+                }
+                currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
+            }
         }
 
         return eventDictionary.map { EventDate(date: $0.key, events: $0.value) }.sorted { $0.date < $1.date }
     }
+    
+    enum DateFillMode {
+        case fillGaps
+        case fillNextFortnight
+    }
+
 
     
     public enum GroupMode {

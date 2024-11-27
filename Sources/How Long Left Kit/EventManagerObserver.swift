@@ -6,8 +6,9 @@
 //
 
 import Foundation
-import Combine
+@preconcurrency import Combine
 
+@MainActor
 open class EventCacheObserver {
     
     let eventCache: EventCache
@@ -29,8 +30,8 @@ open class EventCacheObserver {
                 
                 Task {
                 
-               await self?.eventsChanged()
-            }
+                    await self?.eventsChanged()
+                }
                 
             })
     }

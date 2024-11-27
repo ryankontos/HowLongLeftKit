@@ -7,9 +7,9 @@
 
 import SwiftUI
 
-public struct EventCountdownText: View {
+public struct EventInfoText: View {
     
-    @EnvironmentObject private var timerContainer: GlobalTimerContainer
+    @ObservedObject private var timerContainer = GlobalTimerContainer.shared
     
     @ObservedObject private var infoStringGen: InfoStringManager
     
@@ -17,10 +17,10 @@ public struct EventCountdownText: View {
     
     
     
-    public init(_ event: Event) {
+    public init(_ event: Event, stringGenerator: EventInfoStringGenerator) {
         
         self.event = event
-        self.infoStringGen = InfoStringManager(event: event, stringGenerator: EventCountdownTextGenerator())
+        self.infoStringGen = InfoStringManager(event: event, stringGenerator: stringGenerator)
         
     }
     

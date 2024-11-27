@@ -7,12 +7,13 @@
 
 import Foundation
 import EventKit
-import Combine
+@preconcurrency import Combine
 import os.log
 import CryptoKit
 import Defaults
 import SwiftUI
 
+@MainActor
 public class EventCache: ObservableObject {
     
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "EventCache")
@@ -135,29 +136,34 @@ public class EventCache: ObservableObject {
     
    
     private func updateEvents() {
-        guard let calendarProvider, let calendarReader else { return }
+        guard let calendarProvider, let calendarReader, let hiddenEventManager else { return }
 
         // Fetch new events
         let fetchResult = calendarReader.getEvents(from: calendarProvider.getAllowedCalendars(matchingContextIn: calendarContexts))
         let newEvents = fetchResult.events
             .filter { event in calendarProvider.getAllDayAllowed() || !event.isAllDay }
 
-        // Create a dictionary for new events keyed by their ID
-        let newEventsDict = Dictionary(uniqueKeysWithValues: newEvents.map { ($0.id, $0) })
-        
-        // Create a dictionary for the current cache keyed by event ID
-        let oldEventsDict = eventCache?.reduce(into: [String: Event]()) { $0[$1.id] = $1 } ?? [:]
-
         var newEventCache = [Event]()
         var foundChanges = false
 
-        // Update existing events and add new events
-        for (eventID, ekEvent) in newEventsDict {
-            if var existingEvent = oldEventsDict[eventID] {
+        // Iterate through new events and update or add them
+        for ekEvent in newEvents {
+            guard let eventID = ekEvent.eventIdentifier else { continue }
+            
+            if hiddenEventManager.isEventStoredWith(eventID: eventID) {
+                foundChanges = true
+                continue
+            }
+
+            // Check if the event already exists in the cache
+            if let index = eventCache?.firstIndex(where: { $0.eventID == eventID }) {
+                // Update the existing event
+                var existingEvent = eventCache![index]
                 let changes = updateEvent(&existingEvent, from: ekEvent)
                 foundChanges = foundChanges || changes
                 newEventCache.append(existingEvent)
             } else {
+                // Add new event
                 foundChanges = true
                 let newEvent = Event(event: ekEvent)
                 #if os(macOS)
@@ -169,10 +175,12 @@ public class EventCache: ObservableObject {
             }
         }
 
-        // Detect deletions by checking for events in old cache that are not in newEventsDict
-        for oldEventID in oldEventsDict.keys where newEventsDict[oldEventID] == nil {
-            foundChanges = true
-            logger.debug("Event deleted: \(oldEventID)")
+        // Detect deletions by checking for events in the old cache that are not in the new events
+        if let oldEventCache = eventCache {
+            for oldEvent in oldEventCache where !newEvents.contains(where: { $0.eventIdentifier == oldEvent.eventID }) {
+                foundChanges = true
+                logger.debug("Event deleted: \(oldEvent.eventID)")
+            }
         }
 
         // Update the cache if there are changes
@@ -184,7 +192,8 @@ public class EventCache: ObservableObject {
         }
     }
 
-    private func calculateHash(for dates: [Date]) -> String {
+
+    public func calculateHash(for dates: [Date]) -> String {
         let concatenatedDates = dates.map { String($0.timeIntervalSinceReferenceDate) }.joined(separator: " ")
         let hashedData = SHA256.hash(data: concatenatedDates.data(using: .utf8)!)
         return hashedData.map { String(format: "%02x", $0) }.joined()

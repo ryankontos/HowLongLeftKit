@@ -44,6 +44,15 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
     
     public var id: String
     
+    public func completion(at date: Date = Date()) -> Double {
+            guard startDate <= date, endDate > date else {
+                return startDate > date ? 0.0 : 1.0
+            }
+            let totalDuration = endDate.timeIntervalSince(startDate)
+            let elapsedDuration = date.timeIntervalSince(startDate)
+            return max(0.0, min(1.0, elapsedDuration / totalDuration))
+    }
+    
     init(event: EKEvent) {
         self.title = event.title.trimmingCharacters(in: .whitespacesAndNewlines)
         self.startDate = event.startDate
@@ -101,8 +110,13 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
         case upcoming
     }
     
+    public static func makeExampleEvent(title: String, start: Date = .now, end: Date) -> Event {
+        return Event(title: title, start: start, end: end)
+    }
+        
+    
     public static var example: Event {
-        return Event(title: "Example Event", start: Date(), end: Date().addingTimeInterval(3615))
+        return Event(title: "Example Event", start: Date(), end: Date().addingTimeInterval(3500))
     }
     
     #if canImport(SwiftUI)

@@ -1,4 +1,4 @@
-// swift-tools-version: 5.10
+// swift-tools-version: 6.0
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -20,8 +20,9 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "HowLongLeftKit",
-            dependencies: ["Defaults"]), // Add "Defaults" as a dependency to the target
+            name: "HowLongLeftKit", dependencies: ["Defaults"], swiftSettings: [
+                
+            ]),
         .testTarget(
             name: "How Long Left KitTests",
             dependencies: ["HowLongLeftKit", "Defaults"]),

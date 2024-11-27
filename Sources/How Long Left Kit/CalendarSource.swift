@@ -9,14 +9,17 @@ import Foundation
 import EventKit
 import CryptoKit
 
+@MainActor
 public class CalendarSource: ObservableObject {
     
+    @MainActor
     internal let eventStore = EKEventStore()
     
     public var authorization: EKAuthorizationStatus {
         return EKEventStore.authorizationStatus(for: .event)
     }
     
+    @MainActor
     public init(requestCalendarAccessImmediately request: Bool) {
         if request {
             Task {
@@ -28,17 +31,19 @@ public class CalendarSource: ObservableObject {
     @MainActor
     public func requestCalendarAccess() async -> Bool {
         
+        let accessStore = EKEventStore()
+        
         var optionalResult: Bool?
         
         if #available(macOS 14.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *) {
-             optionalResult = try? await eventStore.requestFullAccessToEvents()
+             optionalResult = try? await accessStore.requestFullAccessToEvents()
         } else {
-            optionalResult = try? await eventStore.requestAccess(to: .event)
+            optionalResult = try? await accessStore.requestAccess(to: .event)
         }
         let result = optionalResult ?? false
        
         
-            self.objectWillChange.send()
+        self.objectWillChange.send()
         
         
         return result

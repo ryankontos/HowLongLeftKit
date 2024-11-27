@@ -8,8 +8,9 @@
 import Foundation
 import CoreData
 
+@MainActor
 public class HLLPersistenceController {
-    static let shared = HLLPersistenceController()
+    @MainActor static let shared = HLLPersistenceController()
 
     public let persistentContainer: NSPersistentCloudKitContainer
     public  let backgroundContext: NSManagedObjectContext
@@ -30,7 +31,7 @@ public class HLLPersistenceController {
         backgroundContext = persistentContainer.newBackgroundContext()
     }
 
-    public var viewContext: NSManagedObjectContext {
+    @MainActor public var viewContext: NSManagedObjectContext {
         return persistentContainer.viewContext
     }
 

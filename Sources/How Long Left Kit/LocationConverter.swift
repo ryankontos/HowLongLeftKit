@@ -11,7 +11,7 @@ import CoreLocation
 import Foundation
 import CoreLocation
 
-public actor LocationCache {
+final public class LocationCache {
     private var cache: [String: CLLocation] = [:]
     
     func getLocation(for name: String) -> CLLocation? {
@@ -23,19 +23,22 @@ public actor LocationCache {
     }
 }
 
-public class LocationConverter {
+@MainActor
+final public class LocationConverter {
     static public let shared = LocationConverter()
-    private let geocoder = CLGeocoder()
+   
     private let cache = LocationCache()
     
     private init() {}
     
     public func convertToCLLocation(locationName: String) async throws -> CLLocation {
         // Check if the location is already in the cache
-        if let cachedLocation = await cache.getLocation(for: locationName) {
+        if let cachedLocation = cache.getLocation(for: locationName) {
             return cachedLocation
         }
         
+        
+        let geocoder = CLGeocoder()
         // Perform geocoding
         let placemarks = try await geocoder.geocodeAddressString(locationName)
         
@@ -44,7 +47,7 @@ public class LocationConverter {
         }
         
         // Cache the location
-        await cache.setLocation(location, for: locationName)
+        cache.setLocation(location, for: locationName)
         
         return location
     }

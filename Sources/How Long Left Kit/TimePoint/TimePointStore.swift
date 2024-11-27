@@ -31,9 +31,7 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
         }
     }
     
-    deinit {
-        updateTimer?.invalidate()
-    }
+  
     
     public func getPointAt(date: Date) -> TimePoint? {
         return points.last(where: { $0.date < date }) ?? points.first

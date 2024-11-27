@@ -19,6 +19,7 @@ class WidgetUpdateManager {
 
     private var latestHashReloadedFor: String?
 
+
     init(appEventCache: EventCache) {
         self.appEventCache = appEventCache
         // Create the widgetContainer with the same configuration as the widget
@@ -30,17 +31,15 @@ class WidgetUpdateManager {
     }
 
     private func eventCacheDidChange() {
-        Task {
-            await checkIfWidgetNeedsReload()
-        }
+        
+            checkIfWidgetNeedsReload()
+        
     }
 
-    func checkIfWidgetNeedsReload() async {
+    func checkIfWidgetNeedsReload() {
         // Wait until the eventCache has been updated
         let widgetEventCache = widgetContainer.eventCache
-        while widgetEventCache.cacheSummaryHash == nil {
-            try? await Task.sleep(nanoseconds: 500_000_000) // Wait 0.5 seconds
-        }
+       
         // Get the new hash
         let newHash = widgetEventCache.cacheSummaryHash
         // Get the last known hash from UserDefaults

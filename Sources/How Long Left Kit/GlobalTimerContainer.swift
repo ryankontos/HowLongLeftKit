@@ -10,10 +10,14 @@ import Combine
 
 public class GlobalTimerContainer: ObservableObject {
     
+    @MainActor public static let shared = GlobalTimerContainer()
+    
     public init() {
+        
+      
         
     }
     
-    public let everySecondPublisher = Timer.publish(every: 5, on: .main, in: .common).autoconnect().map { _ in () }.eraseToAnyPublisher()
+    public let everySecondPublisher = Timer.publish(every: 1, on: .main, in: .common).autoconnect().map { _ in () }.eraseToAnyPublisher()
     
 }

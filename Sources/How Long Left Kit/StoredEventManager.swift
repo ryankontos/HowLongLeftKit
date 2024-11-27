@@ -8,8 +8,10 @@
 import Foundation
 import CoreData
 
+@MainActor
 public class StoredEventManager: ObservableObject {
     
+    @MainActor
     let context = HLLPersistenceController.shared.viewContext
     
     private var domainObject: EventStorageDomain?
