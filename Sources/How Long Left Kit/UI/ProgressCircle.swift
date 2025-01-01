@@ -54,9 +54,14 @@ public struct ProgressCircle<Content: View>: View {
                     lineCap: isRounded ? .round : .square
                 ))
                 .rotationEffect(.degrees(-90)) // Start at top
-                .animation(.easeInOut, value: progress) // Animate changes
+                .animation(.easeInOut, value: progress)
+            // Animate changes
             
             // Center content
+           
+        }
+       // .drawingGroup()
+        .overlay {
             content
         }
     }

@@ -9,15 +9,12 @@ import Foundation
 
 class TimePointGenerator {
 
-    
-    init() {
-        
-    }
-    
+    init() {}
+
     func generateFirstPoint(for events: [Event], withCacheSummaryHash hash: String) -> TimePoint {
         return generateTimePoint(for: Date(), from: events, withCacheSummaryHash: hash)
     }
-    
+
     func generateTimePoints(for events: [Event], withCacheSummaryHash hash: String) -> [TimePoint] {
         let now = Date()
         var timePoints = [TimePoint]()
@@ -30,13 +27,11 @@ class TimePointGenerator {
             }
         }
         
-        // Ensure time points are sorted by date
         timePoints.sort { $0.date < $1.date }
         
         return timePoints
     }
 
-    
     func generateTimePoint(for date: Date, from events: [Event], withCacheSummaryHash hash: String) -> TimePoint {
         var currentArray = [Event]()
         var upcomingArray = [Event]()
@@ -55,7 +50,25 @@ class TimePointGenerator {
         return TimePoint(date: date, cacheSummaryHash: hash, inProgressEvents: currentArray, upcomingEvents: upcomingArray)
     }
 
-   
-    
-  
+    func generateCalendarGroups(for events: [Event], withCacheSummaryHash hash: String) -> [CalendarGroup] {
+        // Group events by calendar ID
+        let eventsByCalendar = Dictionary(grouping: events, by: { $0.calendarID })
+        
+        var calendarGroups = [CalendarGroup]()
+        
+        // For each calendar ID group
+        for (calendarID, calendarEvents) in eventsByCalendar {
+            // Get the unique calendar
+            guard let calendarID = calendarEvents.first?.calendarID else { continue }
+            
+            // Generate time points for the events in this calendar
+            let timePoints = generateTimePoints(for: calendarEvents, withCacheSummaryHash: hash)
+            
+            // Create the CalendarGroup and add it to the array
+            let calendarGroup = CalendarGroup(calendarID: calendarID, timePoints: timePoints)
+            calendarGroups.append(calendarGroup)
+        }
+        
+        return calendarGroups
+    }
 }
