@@ -33,7 +33,7 @@ public class EventCache: ObservableObject {
     private var updatesCache: Bool
     
     private weak var calendarReader: CalendarSource?
-    private weak var calendarProvider: (any EventFilteringOptionsProvider)? {
+    public weak var calendarProvider: (any EventFilteringOptionsProvider)? {
         didSet { setupCalendarsSubscription() }
     }
     private weak var hiddenEventManager: StoredEventManager? {
@@ -134,7 +134,10 @@ public class EventCache: ObservableObject {
         return eventCache ?? []
     }
     
-   
+    public func getAllowedCalendars() -> [EKCalendar]? {
+        return calendarProvider?.getAllowedCalendars(matchingContextIn: calendarContexts)
+    }
+    
     private func updateEvents() {
         guard let calendarProvider, let calendarReader, let hiddenEventManager else { return }
 

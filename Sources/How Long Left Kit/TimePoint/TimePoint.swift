@@ -49,37 +49,69 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
         return lhs.date == rhs.date && lhs.inProgressEvents == rhs.inProgressEvents && lhs.upcomingEvents == rhs.upcomingEvents
     }
     
-    public func fetchSingleEvent(accordingTo rule: EventFetchRule) -> Event? {
+    public func fetchSingleEvent(accordingTo rule: EventFetchRule, for calendarID: String? = nil) -> Event? {
         // Use the new fetchEvents method to get the filtered and sorted array of events
-        let filteredEvents = fetchEvents(accordingTo: rule)
+        let filteredEvents = fetchEvents(accordingTo: rule, for: calendarID)
         
         // Return the first event in the filtered list, or nil if the list is empty
         return filteredEvents.first
     }
     
-    public func fetchEvents(accordingTo rule: EventFetchRule) -> [Event] {
+    public func fetchEvents(accordingTo rule: EventFetchRule, for calendarID: String? = nil) -> [Event] {
         var filteredEvents: [Event]
         
         switch rule {
         case .upcomingOnly:
-            filteredEvents = upcomingEvents.sortedByStartDate() // Only upcoming events, sorted by start date
+            var eventsToFilter: [Event] = upcomingEvents
+            
+            if let calendarID {
+                eventsToFilter = eventsToFilter.filter { $0.calendarID == calendarID }
+            }
+            
+            filteredEvents = eventsToFilter.sortedByStartDate() // Only upcoming events, sorted by start date
             
         case .inProgressOnly:
-            filteredEvents = inProgressEvents.sortedByStartDate() // Only in-progress events, sorted by start date
+            var eventsToFilter: [Event] = inProgressEvents
+            
+            if let calendarID {
+                eventsToFilter = eventsToFilter.filter { $0.calendarID == calendarID }
+            }
+            
+            filteredEvents = eventsToFilter.sortedByStartDate() // Only in-progress events, sorted by start date
             
         case .preferUpcoming:
-            // Combine both upcoming and in-progress events, prioritizing upcoming ones
-            filteredEvents = upcomingEvents.sortedByStartDate() + inProgressEvents.sortedByStartDate()
+            var upcomingToFilter: [Event] = upcomingEvents
+            var inProgressToFilter: [Event] = inProgressEvents
+            
+            if let calendarID {
+                upcomingToFilter = upcomingToFilter.filter { $0.calendarID == calendarID }
+                inProgressToFilter = inProgressToFilter.filter { $0.calendarID == calendarID }
+            }
+            
+            filteredEvents = upcomingToFilter.sortedByStartDate() + inProgressToFilter.sortedByStartDate()
             
         case .preferInProgress:
-            // Combine both in-progress and upcoming events, prioritizing in-progress ones
-            filteredEvents = inProgressEvents.sortedByStartDate() + upcomingEvents.sortedByStartDate()
+            var inProgressToFilter: [Event] = inProgressEvents
+            var upcomingToFilter: [Event] = upcomingEvents
+            
+            if let calendarID {
+                inProgressToFilter = inProgressToFilter.filter { $0.calendarID == calendarID }
+                upcomingToFilter = upcomingToFilter.filter { $0.calendarID == calendarID }
+            }
+            
+            filteredEvents = inProgressToFilter.sortedByStartDate() + upcomingToFilter.sortedByStartDate()
             
         case .soonestCountdownDate:
-            // Combine both upcoming and in-progress events and sort by their countdown date
-            filteredEvents = allEvents.sorted {
+            var allToFilter: [Event] = allEvents
+            
+            if let calendarID {
+                allToFilter = allToFilter.filter { $0.calendarID == calendarID }
+            }
+            
+            filteredEvents = allToFilter.sorted {
                 $0.countdownDate(at: date) < $1.countdownDate(at: date)
             }
+            
         case .noEvents:
             filteredEvents = []
         }

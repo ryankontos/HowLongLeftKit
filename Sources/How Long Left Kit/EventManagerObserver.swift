@@ -11,7 +11,7 @@ import Foundation
 @MainActor
 open class EventCacheObserver {
     
-    let eventCache: EventCache
+    public let eventCache: EventCache
     
     private var eventSubscription: AnyCancellable?
     public static let queue = DispatchQueue(label: "com.howlongleft.EventCacheObserver", attributes: .concurrent)
