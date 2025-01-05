@@ -17,7 +17,7 @@ public class EventListGroupProvider {
         self.listSettings = settingsManager
     }
     
-    public func getGroups(from point: TimePoint, selected: Event?) -> EventGroups {
+    public func getGroups(from point: TimePoint, selected: HLLEvent?) -> EventGroups {
         
         //print("Get event groups")
         
@@ -36,7 +36,6 @@ public class EventListGroupProvider {
             )
         }
         
-        
         // Include a pinned section if a specific event is selected
         if let selected {
             headerGroups.append(TitledEventGroup.makeGroup(title: "Pinned", info: nil, events: [selected], makeIfEmpty: true)!)
@@ -50,7 +49,7 @@ public class EventListGroupProvider {
             return .init(headerGroups: headerGroups, upcomingGroups: [])
         }
         
-        var nextGroup: TitledEventGroup?
+        let nextGroup: TitledEventGroup? = nil
         
         // Create an optional group for the next upcoming event with a prominent flag
         /*if let nextEvent = point.fetchSingleEvent(accordingTo: .soonestCountdownDate), nextEvent.status(at: point.date) == .upcoming {
@@ -93,8 +92,8 @@ public class EventListGroupProvider {
         return .init(headerGroups: headerGroups, upcomingGroups: groups)
     }
     
-    func groupEventsByDate(_ events: [Event], at date: Date = Date(), by groupingMode: GroupMode, fillMode: DateFillMode = .fillGaps) -> [EventDate] {
-        var eventDictionary = [Date: [Event]]()
+    func groupEventsByDate(_ events: [HLLEvent], at date: Date = Date(), by groupingMode: GroupMode, fillMode: DateFillMode = .fillGaps) -> [EventDate] {
+        var eventDictionary = [Date: [HLLEvent]]()
         let calendar = Calendar.current
 
         for event in events {

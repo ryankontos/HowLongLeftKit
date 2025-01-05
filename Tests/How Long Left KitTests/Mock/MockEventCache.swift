@@ -10,7 +10,7 @@ import Foundation
 
 public final class MockEventCache: EventCache {
     // Store mock events
-    private var mockEvents: [Event] = []
+    private var mockEvents: [HLLEvent] = []
     private var mockHash: String?
     
     public override init(calendarReader: CalendarSource? = nil,
@@ -28,13 +28,13 @@ public final class MockEventCache: EventCache {
     }
     
     /// Set mock events
-    public func setMockEvents(_ events: [Event]) {
+    public func setMockEvents(_ events: [HLLEvent]) {
         self.mockEvents = events
         self.mockHash = calculateHash(for: events.map { $0.startDate })
     }
     
     /// Get events
-    public override func getEvents() async -> [Event] {
+    public override func getEvents() async -> [HLLEvent] {
         return mockEvents
     }
     

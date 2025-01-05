@@ -18,7 +18,7 @@ public class EventCache: ObservableObject {
     
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "EventCache")
     
-    private var eventCache: [Event]?
+    private var eventCache: [HLLEvent]?
     public var cacheSummaryHash: String?
     
     private var stale = false
@@ -80,7 +80,7 @@ public class EventCache: ObservableObject {
     private func setupEventStoreSubscription() {
         guard let reader = calendarReader else { return }
         
-        eventStoreSubscription?.cancel()
+     /*   eventStoreSubscription?.cancel()
         eventStoreSubscription = NotificationCenter.default.publisher(for: .EKEventStoreChanged, object: reader.eventStore)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
@@ -91,7 +91,7 @@ public class EventCache: ObservableObject {
                     self?.updateEvents()
                 }
                 
-            }
+            } */
     }
     
     private func setupCalendarsSubscription() {
@@ -127,14 +127,14 @@ public class EventCache: ObservableObject {
     
     // MARK: - Event Update Logic
     
-    func getEvents() async -> [Event] {
+    func getEvents() async -> [HLLEvent] {
         if eventCache == nil || stale {
             updateEvents()
         }
         return eventCache ?? []
     }
     
-    public func getAllowedCalendars() -> [EKCalendar]? {
+    public func getAllowedCalendars() -> [HLLCalendar]? {
         return calendarProvider?.getAllowedCalendars(matchingContextIn: calendarContexts)
     }
     
@@ -146,12 +146,13 @@ public class EventCache: ObservableObject {
         let newEvents = fetchResult.events
             .filter { event in calendarProvider.getAllDayAllowed() || !event.isAllDay }
 
-        var newEventCache = [Event]()
+        var newEventCache = [HLLEvent]()
         var foundChanges = false
 
         // Iterate through new events and update or add them
-        for ekEvent in newEvents {
-            guard let eventID = ekEvent.eventIdentifier else { continue }
+        for sourceNewEvent in newEvents {
+            
+            let eventID = sourceNewEvent.eventIdentifier
             
             if hiddenEventManager.isEventStoredWith(eventID: eventID) {
                 foundChanges = true
@@ -159,30 +160,24 @@ public class EventCache: ObservableObject {
             }
 
             // Check if the event already exists in the cache
-            if let index = eventCache?.firstIndex(where: { $0.eventID == eventID }) {
+            if let index = eventCache?.firstIndex(where: { $0.eventIdentifier == eventID }) {
                 // Update the existing event
                 var existingEvent = eventCache![index]
-                let changes = updateEvent(&existingEvent, from: ekEvent)
+                let changes = updateEvent(&existingEvent, from: sourceNewEvent)
                 foundChanges = foundChanges || changes
                 newEventCache.append(existingEvent)
             } else {
                 // Add new event
                 foundChanges = true
-                let newEvent = Event(event: ekEvent)
-                #if os(macOS)
-                newEvent.setColor(color: Color(ekEvent.calendar.color))
-                #else
-                newEvent.setColor(color: Color(ekEvent.calendar.cgColor))
-                #endif
-                newEventCache.append(newEvent)
+                newEventCache.append(sourceNewEvent)
             }
         }
 
         // Detect deletions by checking for events in the old cache that are not in the new events
         if let oldEventCache = eventCache {
-            for oldEvent in oldEventCache where !newEvents.contains(where: { $0.eventIdentifier == oldEvent.eventID }) {
+            for oldEvent in oldEventCache where !newEvents.contains(where: { $0.eventIdentifier == oldEvent.eventIdentifier }) {
                 foundChanges = true
-                logger.debug("Event deleted: \(oldEvent.eventID)")
+                logger.debug("Event deleted: \(oldEvent.eventIdentifier)")
             }
         }
 
@@ -202,17 +197,17 @@ public class EventCache: ObservableObject {
         return hashedData.map { String(format: "%02x", $0) }.joined()
     }
     
-    private func updateEvent(_ event: inout Event, from ekEvent: EKEvent) -> Bool {
+    private func updateEvent(_ event: inout HLLEvent, from ekEvent: HLLEvent) -> Bool {
         var changes = false
         updateIfNeeded(&event.title, compareTo: ekEvent.title, flag: &changes)
         updateIfNeeded(&event.startDate, compareTo: ekEvent.startDate, flag: &changes)
         updateIfNeeded(&event.endDate, compareTo: ekEvent.endDate, flag: &changes)
-        updateIfNeeded(&event.calendarID, compareTo: ekEvent.calendar.calendarIdentifier, flag: &changes)
+        updateIfNeeded(&event.calendarID, compareTo: ekEvent.calendarID, flag: &changes)
         updateIfNeeded(&event.structuredLocation, compareTo: ekEvent.structuredLocation, flag: &changes)
         #if os(macOS)
-        event.setColor(color: Color(ekEvent.calendar.color))
+        event.setColor(color: event.color)
         #else
-        event.setColor(color: Color(ekEvent.calendar.cgColor))
+        event.setColor(color: event.color)
         #endif
         return changes
     }

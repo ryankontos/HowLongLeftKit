@@ -14,9 +14,9 @@ public class InfoStringManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     private var stringGenerator: EventInfoStringGenerator
-    private var event: Event
+    private var event: HLLEvent
     
-    public init(event: Event, stringGenerator: EventInfoStringGenerator) {
+    public init(event: HLLEvent, stringGenerator: EventInfoStringGenerator) {
         
         self.event = event
         self.stringGenerator = stringGenerator

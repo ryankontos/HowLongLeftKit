@@ -14,17 +14,17 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
     
     public var cacheSummaryHash: String
     
-    @Published public var inProgressEvents: [Event]
-    @Published public var upcomingEvents: [Event]
+    @Published public var inProgressEvents: [HLLEvent]
+    @Published public var upcomingEvents: [HLLEvent]
     
-    public var allEvents: [Event] {
+    public var allEvents: [HLLEvent] {
         return inProgressEvents + upcomingEvents
     }
     
     
     public var id: Date { return date }
     
-    public init(date: Date, cacheSummaryHash: String, inProgressEvents: [Event], upcomingEvents: [Event]) {
+    public init(date: Date, cacheSummaryHash: String, inProgressEvents: [HLLEvent], upcomingEvents: [HLLEvent]) {
         self.date = date
         self.cacheSummaryHash = cacheSummaryHash
         self.inProgressEvents = inProgressEvents.filter { $0.status(at: date) == .inProgress }
@@ -49,7 +49,7 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
         return lhs.date == rhs.date && lhs.inProgressEvents == rhs.inProgressEvents && lhs.upcomingEvents == rhs.upcomingEvents
     }
     
-    public func fetchSingleEvent(accordingTo rule: EventFetchRule, for calendarID: String? = nil) -> Event? {
+    public func fetchSingleEvent(accordingTo rule: EventFetchRule, for calendarID: String? = nil) -> HLLEvent? {
         // Use the new fetchEvents method to get the filtered and sorted array of events
         let filteredEvents = fetchEvents(accordingTo: rule, for: calendarID)
         
@@ -57,12 +57,12 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
         return filteredEvents.first
     }
     
-    public func fetchEvents(accordingTo rule: EventFetchRule, for calendarID: String? = nil) -> [Event] {
-        var filteredEvents: [Event]
+    public func fetchEvents(accordingTo rule: EventFetchRule, for calendarID: String? = nil) -> [HLLEvent] {
+        var filteredEvents: [HLLEvent]
         
         switch rule {
         case .upcomingOnly:
-            var eventsToFilter: [Event] = upcomingEvents
+            var eventsToFilter: [HLLEvent] = upcomingEvents
             
             if let calendarID {
                 eventsToFilter = eventsToFilter.filter { $0.calendarID == calendarID }
@@ -71,7 +71,7 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
             filteredEvents = eventsToFilter.sortedByStartDate() // Only upcoming events, sorted by start date
             
         case .inProgressOnly:
-            var eventsToFilter: [Event] = inProgressEvents
+            var eventsToFilter: [HLLEvent] = inProgressEvents
             
             if let calendarID {
                 eventsToFilter = eventsToFilter.filter { $0.calendarID == calendarID }
@@ -80,8 +80,8 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
             filteredEvents = eventsToFilter.sortedByStartDate() // Only in-progress events, sorted by start date
             
         case .preferUpcoming:
-            var upcomingToFilter: [Event] = upcomingEvents
-            var inProgressToFilter: [Event] = inProgressEvents
+            var upcomingToFilter: [HLLEvent] = upcomingEvents
+            var inProgressToFilter: [HLLEvent] = inProgressEvents
             
             if let calendarID {
                 upcomingToFilter = upcomingToFilter.filter { $0.calendarID == calendarID }
@@ -91,8 +91,8 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
             filteredEvents = upcomingToFilter.sortedByStartDate() + inProgressToFilter.sortedByStartDate()
             
         case .preferInProgress:
-            var inProgressToFilter: [Event] = inProgressEvents
-            var upcomingToFilter: [Event] = upcomingEvents
+            var inProgressToFilter: [HLLEvent] = inProgressEvents
+            var upcomingToFilter: [HLLEvent] = upcomingEvents
             
             if let calendarID {
                 inProgressToFilter = inProgressToFilter.filter { $0.calendarID == calendarID }
@@ -102,7 +102,7 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
             filteredEvents = inProgressToFilter.sortedByStartDate() + upcomingToFilter.sortedByStartDate()
             
         case .soonestCountdownDate:
-            var allToFilter: [Event] = allEvents
+            var allToFilter: [HLLEvent] = allEvents
             
             if let calendarID {
                 allToFilter = allToFilter.filter { $0.calendarID == calendarID }

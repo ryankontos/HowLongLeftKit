@@ -1,5 +1,5 @@
 //
-//  Event.swift
+//  HLLEvent.swift
 //  How Long Left
 //
 //  Created by Ryan on 2/5/2024.
@@ -12,7 +12,7 @@ import EventKit
 import SwiftUI
 #endif
 
-public class Event: ObservableObject, Identifiable, Hashable, Equatable {
+public class HLLEvent: ObservableObject, Identifiable, Hashable, Equatable {
     
     @Published public var title: String
     @Published public var startDate: Date
@@ -40,7 +40,7 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
         return structuredLocation?.geoLocation
     }
     
-    public var eventID: String
+    public var eventIdentifier: String
     
     public var id: String
     
@@ -58,7 +58,7 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
         self.startDate = event.startDate
         self.endDate = event.endDate
         self.id = event.id
-        self.eventID = event.eventIdentifier
+        self.eventIdentifier = event.eventIdentifier
         self.calendarID = event.calendar?.calendarIdentifier ?? "Nil"
         self.isAllDay = event.isAllDay
         self.structuredLocation = event.structuredLocation
@@ -72,7 +72,7 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
         self.calendarID = "none"
         self.isAllDay = isAllDay
         self.isPinned = false
-        self.eventID = "none"
+        self.eventIdentifier = "none"
     }
     
     public func countdownDate(at date: Date = Date()) -> Date {
@@ -100,7 +100,7 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
         hasher.combine(id)
     }
     
-    public static func == (lhs: Event, rhs: Event) -> Bool {
+    public static func == (lhs: HLLEvent, rhs: HLLEvent) -> Bool {
         lhs.id == rhs.id
     }
     
@@ -110,13 +110,13 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
         case upcoming
     }
     
-    public static func makeExampleEvent(title: String, start: Date = .now, end: Date) -> Event {
-        return Event(title: title, start: start, end: end)
+    public static func makeExampleEvent(title: String, start: Date = .now, end: Date) -> HLLEvent {
+        return HLLEvent(title: title, start: start, end: end)
     }
         
     
-    public static var example: Event {
-        return Event(title: "Example Event", start: Date(), end: Date().addingTimeInterval(3500))
+    public static var example: HLLEvent {
+        return HLLEvent(title: "Example Event", start: Date(), end: Date().addingTimeInterval(3500))
     }
     
     #if canImport(SwiftUI)
@@ -132,15 +132,15 @@ public class Event: ObservableObject, Identifiable, Hashable, Equatable {
 }
 
 
-public extension Array where Element == Event {
+public extension Array where Element == HLLEvent {
     
     // Function to sort by start date
-    func sortedByStartDate() -> [Event] {
+    func sortedByStartDate() -> [HLLEvent] {
         return self.sorted { $0.startDate < $1.startDate }
     }
     
     // Function to sort by end date
-    func sortedByEndDate() -> [Event] {
+    func sortedByEndDate() -> [HLLEvent] {
         return self.sorted { $0.endDate < $1.endDate }
     }
 }

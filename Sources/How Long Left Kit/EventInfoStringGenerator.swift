@@ -9,7 +9,7 @@ import Foundation
 
 public protocol EventInfoStringGenerator {
     
-    func getString(from event: Event, at date: Date) -> String
+    func getString(from event: HLLEvent, at date: Date) -> String
     
 }
 
@@ -24,7 +24,7 @@ public class EventCountdownTextGenerator: EventInfoStringGenerator {
         self.postional = postional
     }
     
-    public func getString(from event: Event, at date: Date) -> String {
+    public func getString(from event: HLLEvent, at date: Date) -> String {
         let status = event.status(at: date)
         switch status {
         case .ended:

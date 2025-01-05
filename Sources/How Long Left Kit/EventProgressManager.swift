@@ -12,9 +12,9 @@ public class EventProgressManager: ObservableObject {
     @Published public var progress: Double = 0.0
     private var cancellables = Set<AnyCancellable>()
     
-    private let event: Event
+    private let event: HLLEvent
     
-    public init(event: Event) {
+    public init(event: HLLEvent) {
         self.event = event
         updateProgress()
         start()

@@ -8,12 +8,19 @@
 import Foundation
 import EventKit
 import CryptoKit
+import SwiftUI
+import Combine
 
 @MainActor
 public class CalendarSource: ObservableObject {
     
     @MainActor
-    internal let eventStore = EKEventStore()
+    private let eventStore = EKEventStore()
+    private let eventChangedSubject = PassthroughSubject<Void, Never>()
+    
+    public var eventChangedPublisher: AnyPublisher<Void, Never> {
+        eventChangedSubject.eraseToAnyPublisher()
+    }
     
     public var authorization: EKAuthorizationStatus {
         return EKEventStore.authorizationStatus(for: .event)
@@ -26,101 +33,87 @@ public class CalendarSource: ObservableObject {
                 await requestCalendarAccess()
             }
         }
+        setupNotificationSubscription()
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self, name: .EKEventStoreChanged, object: nil)
     }
     
     @MainActor
     public func requestCalendarAccess() async -> Bool {
-        
         let accessStore = EKEventStore()
-        
         var optionalResult: Bool?
         
         if #available(macOS 14.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *) {
-             optionalResult = try? await accessStore.requestFullAccessToEvents()
+            optionalResult = try? await accessStore.requestFullAccessToEvents()
         } else {
             optionalResult = try? await accessStore.requestAccess(to: .event)
         }
         let result = optionalResult ?? false
-       
-        
         self.objectWillChange.send()
-        
-        
         return result
     }
     
-    func getEvents(from calendars: [EKCalendar]) -> EventFetchResult {
-
-        if calendars.isEmpty {
+    func getEvents(from calendars: [HLLCalendar]) -> EventFetchResult {
+        let ekCalendars = calendars.compactMap { lookupEkCalendar(withID: $0.calendarIdentifier) }
+        
+        if ekCalendars.isEmpty {
             return EventFetchResult(events: [], calendars: [])
         }
 
         let calendar = Calendar.current
-
-        // Get the current date
         let now = Date()
-
-        // Set the start date to midnight two days ago
         let start = calendar.startOfDay(for: calendar.date(byAdding: .day, value: -2, to: now)!)
-
-        // Set the end date to the last second of the day 14 days from now
         let endDate = calendar.date(byAdding: .day, value: 14, to: now)!
         let end = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: endDate)!
-
-        // Create the event store request
-        let request = eventStore.predicateForEvents(withStart: start, end: end, calendars: calendars)
-        let events = eventStore.events(matching: request)
-
-        // Return the result with start and end
+        let request = eventStore.predicateForEvents(withStart: start, end: end, calendars: ekCalendars)
+        let events = eventStore.events(matching: request).map { HLLEvent(event: $0) }
         return EventFetchResult(events: events, calendars: calendars, predicateStart: start, predicateEnd: end)
     }
     
-    public func lookupCalendar(withID id: String) -> EKCalendar? {
-        return eventStore.calendar(withIdentifier: id)
+    public func lookupCalendar(withID id: String) -> HLLCalendar? {
+        if let calendar = lookupEkCalendar(withID: id) {
+            return HLLCalendar(ekCalendar: calendar)
+        }
+        return nil
     }
     
+    private func lookupEkCalendar(withID id: String) -> EKCalendar? {
+        if let calendar = eventStore.calendar(withIdentifier: id) {
+            return calendar
+        }
+        return nil
+    }
+    
+    public func getAllHLLCalendars() -> [HLLCalendar] {
+        return self.eventStore.calendars(for: .event).map { HLLCalendar(ekCalendar: $0) }
+    }
+    
+    public func getColor(calendarID: String) -> Color {
+        if let col = self.lookupCalendar(withID: calendarID)?.cgColor {
+            return Color(cgColor: col)
+        }
+        return .primary
+    }
+    
+    private func setupNotificationSubscription() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(eventStoreChanged),
+            name: .EKEventStoreChanged,
+            object: eventStore
+        )
+    }
+    
+    @objc private func eventStoreChanged() {
+        eventChangedSubject.send()
+    }
 }
 
-
-struct EventFetchResult {
-    var events: [EKEvent]
-    var calendars: [EKCalendar]
-    var predicateStart: Date?
-    var predicateEnd: Date?
-
-    func getHash() -> String {
-            var dataToHash = ""
-
-        
-            for event in events {
-                 let id = String(event.id)
-                    dataToHash += id
-            
-            }
-
-            // Collect calendar identifiers
-            for calendar in calendars {
-                dataToHash += calendar.calendarIdentifier
-            }
-
-            // Add predicateStart and predicateEnd if they exist
-            if let start = predicateStart {
-                dataToHash += String(start.timeIntervalSince1970)
-            }
-            
-            if let end = predicateEnd {
-                dataToHash += String(end.timeIntervalSince1970)
-            }
-
-            // Ensure there is data to hash
-            guard !dataToHash.isEmpty else { return "" }
-            
-            // Create a SHA-256 hash of the combined string
-            let hashData = SHA256.hash(data: Data(dataToHash.utf8))
-
-            // Convert the hash to a string
-            return hashData.map { String(format: "%02x", $0) }.joined()
-        }
-    
-    
+@MainActor
+public protocol EventSource {
+    func requestCalendarAccess() -> Bool
+    func getAllHLLCalendars() -> [HLLCalendar]
+    func getColor(calendarID: String) -> Color
 }

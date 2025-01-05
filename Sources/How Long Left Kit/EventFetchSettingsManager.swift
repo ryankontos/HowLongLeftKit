@@ -77,7 +77,7 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
     private func syncCalendarsWithDomain() {
         guard let domainObject = self.domainObject else { return }
         
-        let allCalendars = calendarSource.eventStore.calendars(for: .event)
+        let allCalendars = calendarSource.getAllHLLCalendars()
         
         let fetchRequest: NSFetchRequest<CalendarInfo> = CalendarInfo.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "domain == %@", domainObject)
@@ -121,7 +121,7 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
         
         do {
             let existingCalendarInfos = try Self.context.fetch(fetchRequest)
-            let allCalendars = calendarSource.eventStore.calendars(for: .event)
+            let allCalendars = calendarSource.getAllHLLCalendars()
             let allowedCalendarIds = Set(allCalendars.map { $0.calendarIdentifier })
             
             var validCalendarInfos = existingCalendarInfos.filter { allowedCalendarIds.contains($0.id ?? "") }
@@ -185,14 +185,14 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
     }
 
     
-    public func getAllowedCalendars(matchingContextIn contexts: Set<String>) -> [EKCalendar] {
+    public func getAllowedCalendars(matchingContextIn contexts: Set<String>) -> [HLLCalendar] {
         guard self.domainObject != nil else { return [] }
         
         do {
             let allowedCalendarInfos = try fetchAllowedCalendarInfos(matchingContextIn: contexts)
             let allowedCalendarIds = Set(allowedCalendarInfos.compactMap { $0.id })
             
-            let allCalendars = calendarSource.eventStore.calendars(for: .event)
+            let allCalendars = calendarSource.getAllHLLCalendars()
             return allCalendars.filter { allowedCalendarIds.contains($0.calendarIdentifier) }
         } catch {
             handleError(error, message: "Error fetching allowed calendars")
@@ -207,11 +207,11 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
 
 extension EventFetchSettingsManager {
     
-    public func getEKCalendar(for calendarInfo: CalendarInfo) -> EKCalendar? {
+    public func getHLLCalendar(for calendarInfo: CalendarInfo) -> HLLCalendar? {
             guard let calendarID = calendarInfo.id else {
                 return nil
             }
-            let allCalendars = calendarSource.eventStore.calendars(for: .event)
+        let allCalendars = calendarSource.getAllHLLCalendars()
             return allCalendars.first { $0.calendarIdentifier == calendarID }
         }
     

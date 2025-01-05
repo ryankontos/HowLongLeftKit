@@ -12,7 +12,7 @@ import Combine
 @MainActor
 public protocol EventFilteringOptionsProvider: ObservableObject {
     var objectWillChange: ObservableObjectPublisher { get }
-    func getAllowedCalendars(matchingContextIn contexts: Set<String>) -> [EKCalendar]
+    func getAllowedCalendars(matchingContextIn contexts: Set<String>) -> [HLLCalendar]
     func getAllDayAllowed() -> Bool
     func updateForNewCals()
 }

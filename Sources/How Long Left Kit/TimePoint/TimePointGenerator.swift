@@ -11,11 +11,11 @@ class TimePointGenerator {
 
     init() {}
 
-    func generateFirstPoint(for events: [Event], withCacheSummaryHash hash: String) -> TimePoint {
+    func generateFirstPoint(for events: [HLLEvent], withCacheSummaryHash hash: String) -> TimePoint {
         return generateTimePoint(for: Date(), from: events, withCacheSummaryHash: hash)
     }
 
-    func generateTimePoints(for events: [Event], withCacheSummaryHash hash: String) -> [TimePoint] {
+    func generateTimePoints(for events: [HLLEvent], withCacheSummaryHash hash: String) -> [TimePoint] {
         let now = Date()
         var timePoints = [TimePoint]()
         var dates = [Date()]
@@ -32,9 +32,9 @@ class TimePointGenerator {
         return timePoints
     }
 
-    func generateTimePoint(for date: Date, from events: [Event], withCacheSummaryHash hash: String) -> TimePoint {
-        var currentArray = [Event]()
-        var upcomingArray = [Event]()
+    func generateTimePoint(for date: Date, from events: [HLLEvent], withCacheSummaryHash hash: String) -> TimePoint {
+        var currentArray = [HLLEvent]()
+        var upcomingArray = [HLLEvent]()
         
         for event in events {
             if event.status(at: date) == .inProgress {
@@ -50,14 +50,14 @@ class TimePointGenerator {
         return TimePoint(date: date, cacheSummaryHash: hash, inProgressEvents: currentArray, upcomingEvents: upcomingArray)
     }
 
-    func generateCalendarGroups(for events: [Event], withCacheSummaryHash hash: String) -> [CalendarGroup] {
+    func generateCalendarGroups(for events: [HLLEvent], withCacheSummaryHash hash: String) -> [CalendarGroup] {
         // Group events by calendar ID
         let eventsByCalendar = Dictionary(grouping: events, by: { $0.calendarID })
         
         var calendarGroups = [CalendarGroup]()
         
         // For each calendar ID group
-        for (calendarID, calendarEvents) in eventsByCalendar {
+        for (_, calendarEvents) in eventsByCalendar {
             // Get the unique calendar
             guard let calendarID = calendarEvents.first?.calendarID else { continue }
             

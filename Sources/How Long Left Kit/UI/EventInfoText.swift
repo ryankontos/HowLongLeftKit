@@ -13,11 +13,11 @@ public struct EventInfoText: View {
     
     @ObservedObject private var infoStringGen: InfoStringManager
     
-    private var event: Event
+    private var event: HLLEvent
     
     
     
-    public init(_ event: Event, stringGenerator: EventInfoStringGenerator) {
+    public init(_ event: HLLEvent, stringGenerator: EventInfoStringGenerator) {
         
         self.event = event
         self.infoStringGen = InfoStringManager(event: event, stringGenerator: stringGenerator)

@@ -9,7 +9,7 @@ import Foundation
 
 public class TitledEventGroup: Identifiable {
     
-    public init(_ title: String?, _ info: String?, _ events: [Event]) {
+    public init(_ title: String?, _ info: String?, _ events: [HLLEvent]) {
         self.title = title
         self.events = events.filter({ $0.isAllDay == false })
         self.allDayEvents = events.filter({ $0.isAllDay == true })
@@ -20,14 +20,14 @@ public class TitledEventGroup: Identifiable {
     public var title: String?
     public var info: String?
     
-    public var combinedEvents: [Event] // All events
+    public var combinedEvents: [HLLEvent] // All events
     
-    public var allDayEvents: [Event] // All day events
-    public var events: [Event] // Non all day events
+    public var allDayEvents: [HLLEvent] // All day events
+    public var events: [HLLEvent] // Non all day events
     
     public var flags = [Flags]()
     
-    static public func makeGroup(title: String?, info: String?, events: [Event], makeIfEmpty: Bool) -> TitledEventGroup? {
+    static public func makeGroup(title: String?, info: String?, events: [HLLEvent], makeIfEmpty: Bool) -> TitledEventGroup? {
         
         if events.isEmpty, makeIfEmpty == false {
             return nil

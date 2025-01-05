@@ -13,7 +13,7 @@ public class EventDate: Equatable {
     }
     
     
-    init(date: Date, events: [Event]) {
+    init(date: Date, events: [HLLEvent]) {
         self.date = date
         self.events = events
     }
@@ -22,6 +22,6 @@ public class EventDate: Equatable {
     public var date: Date
     
     // Events that occur on this day
-    public var events: [Event]
+    public var events: [HLLEvent]
     
 }
