@@ -17,8 +17,12 @@ public class HLLEvent: ObservableObject, Identifiable, Hashable, Equatable {
     @Published public var title: String
     @Published public var startDate: Date
     @Published public var endDate: Date
+       
+    @Published public var calendar: HLLCalendar
     
-    @Published public var calendarID: String
+    public var calendarID: String {
+        return calendar.calendarIdentifier
+    }
     
     @Published public var isAllDay: Bool
     
@@ -59,20 +63,21 @@ public class HLLEvent: ObservableObject, Identifiable, Hashable, Equatable {
         self.endDate = event.endDate
         self.id = event.id
         self.eventIdentifier = event.eventIdentifier
-        self.calendarID = event.calendar?.calendarIdentifier ?? "Nil"
+        self.calendar = HLLCalendar(ekCalendar: event.calendar)
         self.isAllDay = event.isAllDay
         self.structuredLocation = event.structuredLocation
     }
     
-    public init(title: String, start: Date, end: Date, isAllDay: Bool = false) {
+    public init(title: String, start: Date, end: Date, location: String? = nil, isAllDay: Bool = false, calendar: HLLCalendar) {
         self.title = title
         self.startDate = start
         self.endDate = end
         self.id = title
-        self.calendarID = "none"
+        self.calendar = calendar
         self.isAllDay = isAllDay
         self.isPinned = false
-        self.eventIdentifier = "none"
+        
+        self.eventIdentifier = UUID().uuidString
     }
     
     public func countdownDate(at date: Date = Date()) -> Date {
@@ -111,12 +116,12 @@ public class HLLEvent: ObservableObject, Identifiable, Hashable, Equatable {
     }
     
     public static func makeExampleEvent(title: String, start: Date = .now, end: Date) -> HLLEvent {
-        return HLLEvent(title: title, start: start, end: end)
+        return HLLEvent(title: title, start: start, end: end, calendar: HLLCalendar(calendarIdentifier: UUID().uuidString, title: "Calendar", color: .cyan))
     }
         
     
     public static var example: HLLEvent {
-        return HLLEvent(title: "Example Event", start: Date(), end: Date().addingTimeInterval(3500))
+        return HLLEvent(title: "Example Event", start: Date(), end: Date().addingTimeInterval(3500), calendar: HLLCalendar(calendarIdentifier: UUID().uuidString, title: "Calendar", color: .pink))
     }
     
     #if canImport(SwiftUI)

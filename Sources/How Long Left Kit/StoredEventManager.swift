@@ -118,7 +118,7 @@ public class StoredEventManager: ObservableObject {
         newHiddenEventInfo.eventID = event.eventIdentifier
         newHiddenEventInfo.domain = domainObject
         newHiddenEventInfo.title = event.title
-        newHiddenEventInfo.calendarID = event.calendarID
+        newHiddenEventInfo.calendarID = event.calendar.calendarIdentifier
         newHiddenEventInfo.startDate = event.startDate
         newHiddenEventInfo.endDate = event.endDate
         newHiddenEventInfo.isAllDay = event.isAllDay

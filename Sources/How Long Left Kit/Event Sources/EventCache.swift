@@ -202,7 +202,7 @@ public class EventCache: ObservableObject {
         updateIfNeeded(&event.title, compareTo: ekEvent.title, flag: &changes)
         updateIfNeeded(&event.startDate, compareTo: ekEvent.startDate, flag: &changes)
         updateIfNeeded(&event.endDate, compareTo: ekEvent.endDate, flag: &changes)
-        updateIfNeeded(&event.calendarID, compareTo: ekEvent.calendarID, flag: &changes)
+        updateIfNeeded(&event.calendar, compareTo: ekEvent.calendar, flag: &changes)
         updateIfNeeded(&event.structuredLocation, compareTo: ekEvent.structuredLocation, flag: &changes)
         #if os(macOS)
         event.setColor(color: event.color)

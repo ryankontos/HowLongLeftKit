@@ -91,8 +91,8 @@ public class CalendarSource: ObservableObject {
     }
     
     public func getColor(calendarID: String) -> Color {
-        if let col = self.lookupCalendar(withID: calendarID)?.cgColor {
-            return Color(cgColor: col)
+        if let col = self.lookupCalendar(withID: calendarID)?.color {
+            return col
         }
         return .primary
     }
