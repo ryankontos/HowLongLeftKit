@@ -50,25 +50,4 @@ class TimePointGenerator {
         return TimePoint(date: date, cacheSummaryHash: hash, inProgressEvents: currentArray, upcomingEvents: upcomingArray)
     }
 
-    func generateCalendarGroups(for events: [HLLEvent], withCacheSummaryHash hash: String) -> [CalendarGroup] {
-        // Group events by calendar ID
-        let eventsByCalendar = Dictionary(grouping: events, by: { $0.calendarID })
-        
-        var calendarGroups = [CalendarGroup]()
-        
-        // For each calendar ID group
-        for (_, calendarEvents) in eventsByCalendar {
-            // Get the unique calendar
-            guard let calendarID = calendarEvents.first?.calendarID else { continue }
-            
-            // Generate time points for the events in this calendar
-            let timePoints = generateTimePoints(for: calendarEvents, withCacheSummaryHash: hash)
-            
-            // Create the CalendarGroup and add it to the array
-            let calendarGroup = CalendarGroup(calendarID: calendarID, timePoints: timePoints)
-            calendarGroups.append(calendarGroup)
-        }
-        
-        return calendarGroups
-    }
 }

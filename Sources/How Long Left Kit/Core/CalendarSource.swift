@@ -50,8 +50,15 @@ public class CalendarSource: ObservableObject {
         } else {
             optionalResult = try? await accessStore.requestAccess(to: .event)
         }
+        
         let result = optionalResult ?? false
+        
+        print("Calendar access \(result ? " granted" : " denied")")
+        
+        self.eventStore.reset()
+        
         self.objectWillChange.send()
+        self.eventChangedSubject.send()
         return result
     }
     

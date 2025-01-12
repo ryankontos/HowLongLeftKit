@@ -74,7 +74,7 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
         }
     }
     
-    private func syncCalendarsWithDomain() {
+    public func syncCalendarsWithDomain() {
         guard let domainObject = self.domainObject else { return }
         
         let allCalendars = calendarSource.getAllHLLCalendars()
@@ -144,10 +144,18 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
     }
     
     private func updateSubscriptions() {
+        // Cancel all previous subscriptions
         cancellables.forEach { $0.cancel() }
         cancellables.removeAll()
-        
-    
+
+        // Subscribe to CalendarSource's eventChangedPublisher
+        calendarSource.eventChangedPublisher
+            .sink { [weak self] in
+                guard let self = self else { return }
+                self.updateCalendarItems()
+                self.syncCalendarsWithDomain()
+            }
+            .store(in: &cancellables)
     }
     
     private func calendarInfoDidChange(_ calendarInfo: CalendarInfo) {

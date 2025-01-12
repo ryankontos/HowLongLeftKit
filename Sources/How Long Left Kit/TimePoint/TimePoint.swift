@@ -116,7 +116,7 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
             filteredEvents = []
         }
         
-        print("fetching events for calendar \(calendarID ?? "") and returned \(filteredEvents.count) events")
+       // print("fetching events for calendar \(calendarID ?? "") and returned \(filteredEvents.count) events")
         
         return filteredEvents
     }

@@ -27,6 +27,7 @@ public class EventCache: ObservableObject {
     private var eventStoreSubscription: AnyCancellable?
     private var hiddenEventManagerSubscription: AnyCancellable?
     private var calendarPrefsSubscription: AnyCancellable?
+    private var calendarSourceSubscription: AnyCancellable?
     
     private var fetchDataKey: Defaults.Key<String?>
     
@@ -64,65 +65,47 @@ public class EventCache: ObservableObject {
         Task {
             updateEvents()
         }
-        
-        
-        //waitForAuthorization()
     }
     
     // MARK: - Setup Functions
     
     private func setupSubscriptions() {
-        setupEventStoreSubscription()
         setupCalendarsSubscription()
         setupHiddenEventManagerSubscription()
-    }
-    
-    private func setupEventStoreSubscription() {
-        guard let reader = calendarReader else { return }
-        
-     /*   eventStoreSubscription?.cancel()
-        eventStoreSubscription = NotificationCenter.default.publisher(for: .EKEventStoreChanged, object: reader.eventStore)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                //print("Event store changed")
-                self?.calendarProvider?.updateForNewCals()
-              
-                DispatchQueue.main.async {
-                    self?.updateEvents()
-                }
-                
-            } */
+        setupCalendarSourceSubscription()
     }
     
     private func setupCalendarsSubscription() {
         guard let calendarProvider else { return }
-        
         calendarPrefsSubscription?.cancel()
         calendarPrefsSubscription = calendarProvider.objectWillChange
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                
                 DispatchQueue.main.async {
-                    
                     self?.updateEvents()
                 }
-                
             }
     }
     
     private func setupHiddenEventManagerSubscription() {
         guard let hiddenEventManager else { return }
-        
         hiddenEventManagerSubscription?.cancel()
         hiddenEventManagerSubscription = hiddenEventManager.objectWillChange
             .receive(on: DispatchQueue.main)
-            .sink { [self] in
-                self.updateEvents()
+            .sink { [weak self] in
+                self?.updateEvents()
             }
     }
     
-    private func waitForAuthorization() {
-        while calendarReader?.authorization == .notDetermined { }
+    private func setupCalendarSourceSubscription() {
+        guard let reader = calendarReader else { return }
+        calendarSourceSubscription?.cancel()
+        calendarSourceSubscription = reader.eventChangedPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in
+                self?.logger.debug("Received eventChanged notification from CalendarSource")
+                self?.updateEvents()
+            }
     }
     
     // MARK: - Event Update Logic
@@ -139,8 +122,14 @@ public class EventCache: ObservableObject {
     }
     
     private func updateEvents() {
+        
+        //print("Updating events")
+        
         guard let calendarProvider, let calendarReader, let hiddenEventManager else { return }
 
+        //calendarProvider.updateForNewCals()
+        
+        
         // Fetch new events
         let fetchResult = calendarReader.getEvents(from: calendarProvider.getAllowedCalendars(matchingContextIn: calendarContexts))
         let newEvents = fetchResult.events
@@ -151,7 +140,6 @@ public class EventCache: ObservableObject {
 
         // Iterate through new events and update or add them
         for sourceNewEvent in newEvents {
-            
             let eventID = sourceNewEvent.eventIdentifier
             
             if hiddenEventManager.isEventStoredWith(eventID: eventID) {
@@ -181,6 +169,8 @@ public class EventCache: ObservableObject {
             }
         }
 
+        foundChanges = true
+        
         // Update the cache if there are changes
         if foundChanges {
             eventCache = newEventCache
@@ -188,13 +178,6 @@ public class EventCache: ObservableObject {
             stale = false
             DispatchQueue.main.async { self.objectWillChange.send() }
         }
-    }
-
-
-    public func calculateHash(for dates: [Date]) -> String {
-        let concatenatedDates = dates.map { String($0.timeIntervalSinceReferenceDate) }.joined(separator: " ")
-        let hashedData = SHA256.hash(data: concatenatedDates.data(using: .utf8)!)
-        return hashedData.map { String(format: "%02x", $0) }.joined()
     }
     
     private func updateEvent(_ event: inout HLLEvent, from ekEvent: HLLEvent) -> Bool {
@@ -204,18 +187,13 @@ public class EventCache: ObservableObject {
         updateIfNeeded(&event.endDate, compareTo: ekEvent.endDate, flag: &changes)
         updateIfNeeded(&event.calendar, compareTo: ekEvent.calendar, flag: &changes)
         updateIfNeeded(&event.structuredLocation, compareTo: ekEvent.structuredLocation, flag: &changes)
-        #if os(macOS)
-        event.setColor(color: event.color)
-        #else
-        event.setColor(color: event.color)
-        #endif
         return changes
     }
     
     deinit {
-        eventStoreSubscription?.cancel()
         calendarPrefsSubscription?.cancel()
         hiddenEventManagerSubscription?.cancel()
+        calendarSourceSubscription?.cancel()
         logger.debug("EventCache deinitialized")
     }
 }

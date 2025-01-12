@@ -17,7 +17,6 @@ public class DateFormatterUtility {
     }
     
     
-    
     public func getIntervalString(start: Date, end: Date, isAllDay: Bool, newLineForEnd: Bool) -> String {
         
         if isAllDay {

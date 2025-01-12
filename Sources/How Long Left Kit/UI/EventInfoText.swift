@@ -15,13 +15,9 @@ public struct EventInfoText: View {
     
     private var event: HLLEvent
     
-    
-    
     public init(_ event: HLLEvent, stringGenerator: EventInfoStringGenerator) {
-        
         self.event = event
         self.infoStringGen = InfoStringManager(event: event, stringGenerator: stringGenerator)
-        
     }
     
     public var body: some View {
@@ -35,7 +31,3 @@ public struct EventInfoText: View {
             }
     }
 }
-
-/*#Preview {
-    EventCountdownText()
-}*/

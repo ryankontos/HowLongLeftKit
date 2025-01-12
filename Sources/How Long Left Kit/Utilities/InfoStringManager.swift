@@ -1,6 +1,6 @@
 //
-//  File.swift
-//  
+//  InfoStringManager.swift
+//
 //
 //  Created by Ryan on 18/6/2024.
 //

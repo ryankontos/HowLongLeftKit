@@ -8,11 +8,8 @@
 import Foundation
 
 public protocol EventInfoStringGenerator {
-    
     func getString(from event: HLLEvent, at date: Date) -> String
-    
 }
-
 
 public class EventCountdownTextGenerator: EventInfoStringGenerator {
     

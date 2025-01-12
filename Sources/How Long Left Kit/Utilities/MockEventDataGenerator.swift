@@ -46,14 +46,16 @@ public class MockEventDataGenerator {
     
     private static func generateEvents(for calendars: [HLLCalendar], eventsPerCalendar: Int) -> [HLLEvent] {
         var events = [HLLEvent]()
-        for calendar in calendars {
+        let calendarsWithEvents = calendars.shuffled().prefix(calendars.count / 2) // Half the calendars have events
+        
+        for calendar in calendarsWithEvents {
             for eventIndex in 1...eventsPerCalendar {
                 let title = eventTitles.randomElement() ?? "Event"
                 let startDate = Date().addingTimeInterval(Double(eventIndex * 3600)) // Start 1-hour increments
                 let endDate = startDate.addingTimeInterval(1800) // 30 minutes duration
                 events.append(
                     HLLEvent(
-                        title: "\(title) in \(calendar.title)",
+                        title: "\(title)",
                         start: startDate,
                         end: endDate,
                         calendar: calendar
