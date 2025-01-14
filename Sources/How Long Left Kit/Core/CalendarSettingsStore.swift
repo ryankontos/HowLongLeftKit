@@ -1,3 +1,10 @@
+//
+//  CalendarSettingsStore.swift
+//  How Long Left Kit
+//
+//  Created by Ryan on 2/5/2024.
+//
+
 import Foundation
 import Defaults
 import Combine
@@ -5,9 +12,8 @@ import EventKit
 import CoreData
 import os.log
 
-public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsProvider {
+public class CalendarSettingsStore: ObservableObject, CalendarSettingsProvider {
   
-    
     public struct Configuration {
         public init(domain: String, defaultContextsForNonMatches: Set<String>) {
             self.domain = domain
@@ -78,7 +84,6 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
         guard let domainObject = self.domainObject else { return }
         
         let allCalendars = calendarSource.getAllHLLCalendars()
-        
         let fetchRequest: NSFetchRequest<CalendarInfo> = CalendarInfo.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "domain == %@", domainObject)
         
@@ -127,7 +132,6 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
             var validCalendarInfos = existingCalendarInfos.filter { allowedCalendarIds.contains($0.id ?? "") }
             validCalendarInfos.sort { $0.title ?? "" < $1.title ?? "" }
             self.calendarItems = validCalendarInfos
-           
             
             DispatchQueue.main.async { [weak self] in
                 self?.objectWillChange.send()
@@ -163,9 +167,6 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
         updateCalendarItems()
         objectWillChange.send()
     }
-
-    
- 
     
     public func fetchAllowedCalendarInfos(matchingContextIn contexts: Set<String>) throws -> [CalendarInfo] {
 
@@ -174,7 +175,7 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
         let fetchRequest: NSFetchRequest<CalendarInfo> = CalendarInfo.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "domain == %@", domainObject)
        
-        return try EventFetchSettingsManager.context.performAndWait {
+        return try CalendarSettingsStore.context.performAndWait {
             
             let existingCalendarInfos = try Self.context.fetch(fetchRequest)
             let allowedCalendarInfos = existingCalendarInfos.filter { calendarInfo in
@@ -188,10 +189,8 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
             
             return allowedCalendarInfos
         }
-       
         
     }
-
     
     public func getAllowedCalendars(matchingContextIn contexts: Set<String>) -> [HLLCalendar] {
         guard self.domainObject != nil else { return [] }
@@ -213,15 +212,17 @@ public class EventFetchSettingsManager: ObservableObject, EventFilteringOptionsP
     }
 }
 
-extension EventFetchSettingsManager {
+extension CalendarSettingsStore {
     
     public func getHLLCalendar(for calendarInfo: CalendarInfo) -> HLLCalendar? {
-            guard let calendarID = calendarInfo.id else {
-                return nil
-            }
+        
+        guard let calendarID = calendarInfo.id else {
+            return nil
+        }
+        
         let allCalendars = calendarSource.getAllHLLCalendars()
             return allCalendars.first { $0.calendarIdentifier == calendarID }
-        }
+    }
     
     // Checks if a CalendarInfo object already contains a specific context ID
     public func containsContext(calendarInfo: CalendarInfo, contextID: String) -> Bool {
@@ -236,7 +237,7 @@ extension EventFetchSettingsManager {
         return contextIDsSet.isSubset(of: matchingContextIDs)
     }
     
-    public func updateContexts(for calendarInfo: CalendarInfo, addContextIDs: Set<String>? = nil, removeContextIDs: Set<String>? = nil, notify: Bool = false) {
+    public func updateContexts(for calendarInfo: CalendarInfo, addContextIDs: Set<String>? = nil, removeContextIDs: Set<String>? = nil, notify: Bool = true) {
         guard self.domainObject != nil else { return }
 
         // Determine the contexts to actually add and remove, avoiding conflicts
@@ -280,29 +281,13 @@ extension EventFetchSettingsManager {
     public func batchUpdateContexts(addContextIDs: Set<String>? = nil, removeContextIDs: Set<String>? = nil) {
         
         for item in self.calendarItems {
-            
             updateContexts(for: item, addContextIDs: addContextIDs, removeContextIDs: removeContextIDs, notify: false)
-            
         }
         
-        //print("Batch updated contetxts")
-        
-     
-            
-            self.saveContext()
-            self.updateCalendarItems()
-           // //print("Sending object will change for batch update")
-            //self.objectWillChange.send()
-            
-        
-            
-        
+        self.saveContext()
+        self.updateCalendarItems()
     }
 
-
-
-    
-    // Helper method to save the context
     private func saveContext() {
         do {
             try Self.context.save()
@@ -311,7 +296,6 @@ extension EventFetchSettingsManager {
         }
     }
     
-    // Centralized error handling
     private func handleError(_ error: Error, message: String) {
         // Here we can use a logging framework or any error handling strategy
         ////print("\(message): \(error)")

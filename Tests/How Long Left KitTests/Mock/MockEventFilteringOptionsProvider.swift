@@ -9,7 +9,7 @@ import Foundation
 @testable import HowLongLeftKit
 import EventKit
 
-public final class MockEventFilteringOptionsProvider: EventFilteringOptionsProvider {
+public final class MockEventFilteringOptionsProvider: CalendarSettingsProvider {
     
     public init() {
         

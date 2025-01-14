@@ -34,7 +34,7 @@ public class EventCache: ObservableObject {
     private var updatesCache: Bool
     
     private weak var calendarReader: CalendarSource?
-    public weak var calendarProvider: (any EventFilteringOptionsProvider)? {
+    public weak var calendarProvider: (any CalendarSettingsProvider)? {
         didSet { setupCalendarsSubscription() }
     }
     private weak var hiddenEventManager: StoredEventManager? {
@@ -46,7 +46,7 @@ public class EventCache: ObservableObject {
     public var id: String
     
     public init(calendarReader: CalendarSource?,
-                calendarProvider: any EventFilteringOptionsProvider,
+                calendarProvider: any CalendarSettingsProvider,
                 calendarContexts: Set<String>,
                 hiddenEventManager: StoredEventManager,
                 id: String, updatesCache: Bool = false) {

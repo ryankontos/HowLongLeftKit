@@ -14,7 +14,7 @@ public final class MockEventCache: EventCache {
     private var mockHash: String?
     
     public override init(calendarReader: CalendarSource? = nil,
-                         calendarProvider: any EventFilteringOptionsProvider = MockEventFilteringOptionsProvider(),
+                         calendarProvider: any CalendarSettingsProvider = MockEventFilteringOptionsProvider(),
                          calendarContexts: Set<String> = [],
                          hiddenEventManager: StoredEventManager = MockHiddenEventManager(),
                          id: String = "mockCache",

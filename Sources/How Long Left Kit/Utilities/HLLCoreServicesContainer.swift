@@ -11,7 +11,7 @@ import Foundation
 open class HLLCoreServicesContainer: ObservableObject {
     
     public let calendarReader: CalendarSource
-    public let calendarPrefsManager: EventFetchSettingsManager
+    public let calendarPrefsManager: CalendarSettingsStore
     public let eventCache: EventCache
     public let pointStore: TimePointStore
     
@@ -28,8 +28,8 @@ open class HLLCoreServicesContainer: ObservableObject {
         calendarReader = CalendarSource(requestCalendarAccessImmediately: true)
         
         let appSet: Set<String> = [HLLStandardCalendarContexts.app.rawValue]
-        let config = EventFetchSettingsManager.Configuration(domain: domainString, defaultContextsForNonMatches: appSet)
-        calendarPrefsManager = EventFetchSettingsManager(calendarSource: calendarReader, config: config)
+        let config = CalendarSettingsStore.Configuration(domain: domainString, defaultContextsForNonMatches: appSet)
+        calendarPrefsManager = CalendarSettingsStore(calendarSource: calendarReader, config: config)
         
         hiddenEventManager = StoredEventManager(domain: "\(domainString)_HiddenEvents")
         

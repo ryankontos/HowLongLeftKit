@@ -1,6 +1,6 @@
 //
-//  File.swift
-//  
+//  EventFilteringOptionsProvider.swift
+//
 //
 //  Created by Ryan on 19/6/2024.
 //
@@ -10,7 +10,7 @@ import EventKit
 import Combine
 
 @MainActor
-public protocol EventFilteringOptionsProvider: ObservableObject {
+public protocol CalendarSettingsProvider: ObservableObject {
     var objectWillChange: ObservableObjectPublisher { get }
     func getAllowedCalendars(matchingContextIn contexts: Set<String>) -> [HLLCalendar]
     func getAllDayAllowed() -> Bool
