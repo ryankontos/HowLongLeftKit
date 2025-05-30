@@ -8,13 +8,13 @@
 import Foundation
 import Combine
 
-public class EventProgressManager: ObservableObject {
+public class DurationProgressManager: ObservableObject {
     @Published public var progress: Double = 0.0
     private var cancellables = Set<AnyCancellable>()
     
-    private let event: HLLEvent
+    private let event: HLLCalendarEvent
     
-    public init(event: HLLEvent) {
+    public init(event: HLLCalendarEvent) {
         self.event = event
         updateProgress()
         start()

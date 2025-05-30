@@ -1,5 +1,5 @@
 //
-//  HLLEvent.swift
+//  HLLCalendarEvent.swift
 //  How Long Left
 //
 //  Created by Ryan on 2/5/2024.
@@ -12,7 +12,7 @@ import EventKit
 import SwiftUI
 #endif
 
-public class HLLEvent: ObservableObject, Identifiable, Hashable, Equatable {
+public class HLLCalendarEvent: ObservableObject, Identifiable, Hashable, Equatable {
     
     @Published public var title: String
     @Published public var startDate: Date
@@ -105,7 +105,7 @@ public class HLLEvent: ObservableObject, Identifiable, Hashable, Equatable {
         hasher.combine(id)
     }
     
-    public static func == (lhs: HLLEvent, rhs: HLLEvent) -> Bool {
+    public static func == (lhs: HLLCalendarEvent, rhs: HLLCalendarEvent) -> Bool {
         lhs.id == rhs.id
     }
     
@@ -115,37 +115,36 @@ public class HLLEvent: ObservableObject, Identifiable, Hashable, Equatable {
         case upcoming
     }
     
-    public static func makeExampleEvent(title: String, start: Date = .now, end: Date) -> HLLEvent {
-        return HLLEvent(title: title, start: start, end: end, calendar: HLLCalendar(calendarIdentifier: UUID().uuidString, title: "Calendar", color: .cyan))
+    public static func makeExampleEvent(title: String, start: Date = .now, end: Date) -> HLLCalendarEvent {
+        return HLLCalendarEvent(title: title, start: start, end: end, calendar: HLLCalendar(calendarIdentifier: UUID().uuidString, title: "Calendar", color: .cyan))
     }
         
     
-    public static var example: HLLEvent {
-        return HLLEvent(title: "Example Event", start: Date(), end: Date().addingTimeInterval(3500), calendar: HLLCalendar(calendarIdentifier: UUID().uuidString, title: "Calendar", color: .pink))
+    public static var example: HLLCalendarEvent {
+        return HLLCalendarEvent(title: "Example Event", start: Date(), end: Date().addingTimeInterval(3500), calendar: HLLCalendar(calendarIdentifier: UUID().uuidString, title: "Calendar", color: .pink))
     }
     
     #if canImport(SwiftUI)
     
-    internal func setColor(color: Color) {
-        self.color = color
+  
+    public var color: Color {
+        return calendar.color
     }
-    
-    public private(set) var color: Color = .blue
     
     #endif
     
 }
 
 
-public extension Array where Element == HLLEvent {
+public extension Array where Element == HLLCalendarEvent {
     
     // Function to sort by start date
-    func sortedByStartDate() -> [HLLEvent] {
+    func sortedByStartDate() -> [HLLCalendarEvent] {
         return self.sorted { $0.startDate < $1.startDate }
     }
     
     // Function to sort by end date
-    func sortedByEndDate() -> [HLLEvent] {
+    func sortedByEndDate() -> [HLLCalendarEvent] {
         return self.sorted { $0.endDate < $1.endDate }
     }
 }

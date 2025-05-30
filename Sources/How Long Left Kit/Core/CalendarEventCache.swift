@@ -1,5 +1,5 @@
 //
-//  EventCache.swift
+//  CalendarEventCache.swift
 //  How Long Left Kit
 //
 //  Created by Ryan on 2/5/2024.
@@ -14,11 +14,11 @@ import Defaults
 import SwiftUI
 
 @MainActor
-public class EventCache: ObservableObject {
+public class CalendarEventCache: ObservableObject {
     
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "EventCache")
     
-    private var eventCache: [HLLEvent]?
+    private var eventCache: [HLLCalendarEvent]?
     public var cacheSummaryHash: String?
     
     private var stale = false
@@ -110,7 +110,7 @@ public class EventCache: ObservableObject {
     
     // MARK: - Event Update Logic
     
-    func getEvents() async -> [HLLEvent] {
+    func getEvents() async -> [HLLCalendarEvent] {
         if eventCache == nil || stale {
             updateEvents()
         }
@@ -125,54 +125,37 @@ public class EventCache: ObservableObject {
         
         //print("Updating events")
         
+        let oldEventCache = eventCache
+        
         guard let calendarProvider, let calendarReader, let hiddenEventManager else { return }
 
         //calendarProvider.updateForNewCals()
         
-        
         // Fetch new events
         let fetchResult = calendarReader.getEvents(from: calendarProvider.getAllowedCalendars(matchingContextIn: calendarContexts))
+
         let newEvents = fetchResult.events
             .filter { event in calendarProvider.getAllDayAllowed() || !event.isAllDay }
 
-        var newEventCache = [HLLEvent]()
-        var foundChanges = false
+        var newEventCache = [HLLCalendarEvent]()
 
         // Iterate through new events and update or add them
         for sourceNewEvent in newEvents {
             let eventID = sourceNewEvent.eventIdentifier
             
             if hiddenEventManager.isEventStoredWith(eventID: eventID) {
-                foundChanges = true
                 continue
             }
 
-            // Check if the event already exists in the cache
-            if let index = eventCache?.firstIndex(where: { $0.eventIdentifier == eventID }) {
-                // Update the existing event
-                var existingEvent = eventCache![index]
-                let changes = updateEvent(&existingEvent, from: sourceNewEvent)
-                foundChanges = foundChanges || changes
-                newEventCache.append(existingEvent)
-            } else {
-                // Add new event
-                foundChanges = true
-                newEventCache.append(sourceNewEvent)
-            }
+            newEventCache.append(sourceNewEvent)
+            
         }
 
-        // Detect deletions by checking for events in the old cache that are not in the new events
-        if let oldEventCache = eventCache {
-            for oldEvent in oldEventCache where !newEvents.contains(where: { $0.eventIdentifier == oldEvent.eventIdentifier }) {
-                foundChanges = true
-                logger.debug("Event deleted: \(oldEvent.eventIdentifier)")
-            }
-        }
-
-        foundChanges = true
+       
         
         // Update the cache if there are changes
-        if foundChanges {
+        if oldEventCache != newEventCache {
+           
             eventCache = newEventCache
             cacheSummaryHash = String(fetchResult.getHash())
             stale = false
@@ -180,7 +163,7 @@ public class EventCache: ObservableObject {
         }
     }
     
-    private func updateEvent(_ event: inout HLLEvent, from ekEvent: HLLEvent) -> Bool {
+    private func updateEvent(_ event: inout HLLCalendarEvent, from ekEvent: HLLCalendarEvent) -> Bool {
         var changes = false
         updateIfNeeded(&event.title, compareTo: ekEvent.title, flag: &changes)
         updateIfNeeded(&event.startDate, compareTo: ekEvent.startDate, flag: &changes)
