@@ -7,9 +7,14 @@
 
 import Foundation
 
+@MainActor
 class TimePointGenerator {
+    
+    private var earliestTime: Date
 
-    init() {}
+    init() {
+        self.earliestTime = Date()
+    }
 
     func generateFirstPoint(for events: [HLLEvent], withCacheSummaryHash hash: String) -> TimePoint {
         return generateTimePoint(for: Date(), from: events, withCacheSummaryHash: hash)
@@ -17,12 +22,17 @@ class TimePointGenerator {
 
     func generateTimePoints(for events: [HLLEvent], withCacheSummaryHash hash: String) -> [TimePoint] {
         let now = Date()
+        
+        if now.timeIntervalSince(earliestTime) > 3 {
+            earliestTime = now
+        }
+        
         var timePoints = [TimePoint]()
-        var dates = [Date()]
+        var dates = [earliestTime]
         dates.append(contentsOf: events.flatMap { [$0.startDate, $0.endDate] }.sorted())
 
-        for date in dates {
-            if date >= now {
+        for (index, date) in dates.enumerated() {
+            if index == 0 || date >= now {
                 timePoints.append(generateTimePoint(for: date, from: events, withCacheSummaryHash: hash))
             }
         }
@@ -38,6 +48,7 @@ class TimePointGenerator {
         
         for event in events {
             if event.status(at: date) == .inProgress {
+               
                 currentArray.append(event)
             } else if event.status(at: date) == .upcoming {
                 upcomingArray.append(event)
@@ -49,5 +60,4 @@ class TimePointGenerator {
         
         return TimePoint(date: date, cacheSummaryHash: hash, inProgressEvents: currentArray, upcomingEvents: upcomingArray)
     }
-
 }

@@ -10,7 +10,7 @@ import SwiftUI
 
 public class MockEventDataGenerator {
     let calendars: [HLLCalendar]
-    let events: [HLLEvent]
+    let events: [HLLCalendarEvent]
     let containers: [CalendarEventContainer]
     
     private static let calendarNames = [
@@ -44,8 +44,8 @@ public class MockEventDataGenerator {
         }
     }
     
-    private static func generateEvents(for calendars: [HLLCalendar], eventsPerCalendar: Int) -> [HLLEvent] {
-        var events = [HLLEvent]()
+    private static func generateEvents(for calendars: [HLLCalendar], eventsPerCalendar: Int) -> [HLLCalendarEvent] {
+        var events = [HLLCalendarEvent]()
         let calendarsWithEvents = calendars.shuffled().prefix(calendars.count / 2) // Half the calendars have events
         
         for calendar in calendarsWithEvents {
@@ -54,7 +54,7 @@ public class MockEventDataGenerator {
                 let startDate = Date().addingTimeInterval(Double(eventIndex * 3600)) // Start 1-hour increments
                 let endDate = startDate.addingTimeInterval(1800) // 30 minutes duration
                 events.append(
-                    HLLEvent(
+                    HLLCalendarEvent(
                         title: "\(title)",
                         start: startDate,
                         end: endDate,
@@ -66,7 +66,7 @@ public class MockEventDataGenerator {
         return events
     }
     
-    private static func generateEventContainers(calendars: [HLLCalendar], events: [HLLEvent]) -> [CalendarEventContainer] {
+    private static func generateEventContainers(calendars: [HLLCalendar], events: [HLLCalendarEvent]) -> [CalendarEventContainer] {
         var containers = [CalendarEventContainer]()
         for calendar in calendars {
             let calendarEvents = events.filter { $0.calendarID == calendar.calendarIdentifier }

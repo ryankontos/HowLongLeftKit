@@ -21,7 +21,7 @@ public class CalendarEventCache: ObservableObject {
     private var eventCache: [HLLCalendarEvent]?
     public var cacheSummaryHash: String?
     
-    private var stale = false
+    private var stale = true
     private var calendarContexts: Set<String>
     
     private var eventStoreSubscription: AnyCancellable?
@@ -103,6 +103,7 @@ public class CalendarEventCache: ObservableObject {
         calendarSourceSubscription = reader.eventChangedPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] in
+                self?.stale = true
                 self?.logger.debug("Received eventChanged notification from CalendarSource")
                 self?.updateEvents()
             }
@@ -122,47 +123,95 @@ public class CalendarEventCache: ObservableObject {
     }
     
     private func updateEvents() {
-        
-        //print("Updating events")
-        
-        let oldEventCache = eventCache
-        
-        guard let calendarProvider, let calendarReader, let hiddenEventManager else { return }
+        logger.debug("Updating events")
 
-        //calendarProvider.updateForNewCals()
-        
-        // Fetch new events
-        let fetchResult = calendarReader.getEvents(from: calendarProvider.getAllowedCalendars(matchingContextIn: calendarContexts))
+        if !stale && eventCache != nil {
+            logger.debug("No changes detected, skipping update")
+            return
+        }
 
-        let newEvents = fetchResult.events
-            .filter { event in calendarProvider.getAllDayAllowed() || !event.isAllDay }
+        guard
+            let calendarProvider,
+            let calendarReader,
+            let hiddenEventManager
+        else {
+            logger.error("Missing required components for event update")
+            return
+        }
 
-        var newEventCache = [HLLCalendarEvent]()
+        // 1. Fetch all source events
+        let fetchResult = calendarReader.getEvents(
+            from: calendarProvider.getAllowedCalendars(matchingContextIn: calendarContexts)
+        )
+        let allSourceEvents = fetchResult.events
+            .filter { calendarProvider.getAllDayAllowed() || !$0.isAllDay }
 
-        // Iterate through new events and update or add them
-        for sourceNewEvent in newEvents {
-            let eventID = sourceNewEvent.eventIdentifier
-            
-            if hiddenEventManager.isEventStoredWith(eventID: eventID) {
+        // 2. Deduplicate source events up front
+        var uniqueSourceEvents: [HLLCalendarEvent] = []
+        var seenIDs = Set<String>()
+        for event in allSourceEvents {
+            if seenIDs.insert(event.eventIdentifier).inserted {
+                uniqueSourceEvents.append(event)
+            } else {
+                logger.warning("Duplicate in sourceEvents for \(event.eventIdentifier), skipping")
+            }
+        }
+
+        // 3. Build lookup of old cache, ignoring duplicates (keep first)
+        let oldCache = eventCache ?? []
+        let oldLookup = Dictionary(
+            oldCache.map { ($0.eventIdentifier, $0) },
+            uniquingKeysWith: { first, _ in
+                logger.warning("Duplicate in oldCache for \(first.eventIdentifier), keeping the first one")
+                return first
+            }
+        )
+
+        // 4. Prepare new cache and change-flag
+        var updatedCache: [HLLCalendarEvent] = []
+        var didChange = false
+        var leftoverOld = oldLookup
+
+        // 5. Walk through the source events
+        for source in uniqueSourceEvents {
+            let id = source.eventIdentifier
+
+            // Skip hidden events
+            if hiddenEventManager.isEventStoredWith(eventID: id) {
                 continue
             }
 
-            newEventCache.append(sourceNewEvent)
-            
+            if var existing = leftoverOld[id] {
+                if updateEvent(&existing, from: source) {
+                    didChange = true
+                    logger.debug("Updated event in place: \(id)")
+                }
+                updatedCache.append(existing)
+                leftoverOld.removeValue(forKey: id)
+            } else {
+                updatedCache.append(source)
+                didChange = true
+                logger.debug("Added new event to cache: \(id)")
+            }
         }
 
-       
-        
-        // Update the cache if there are changes
-        if oldEventCache != newEventCache {
-           
-            eventCache = newEventCache
+        // 6. Remove any stale events
+        if !leftoverOld.isEmpty {
+            didChange = true
+            logger.debug("Removed \(leftoverOld.count) stale events from cache")
+        }
+
+        // 7. Finalise cache update if changed
+        if didChange {
+            eventCache = updatedCache
             cacheSummaryHash = String(fetchResult.getHash())
             stale = false
-            DispatchQueue.main.async { self.objectWillChange.send() }
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+            logger.debug("Event cache updated (\(updatedCache.count) events)")
         }
     }
-    
     private func updateEvent(_ event: inout HLLCalendarEvent, from ekEvent: HLLCalendarEvent) -> Bool {
         var changes = false
         updateIfNeeded(&event.title, compareTo: ekEvent.title, flag: &changes)

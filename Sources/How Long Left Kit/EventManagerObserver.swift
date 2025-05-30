@@ -11,17 +11,20 @@ import Foundation
 @MainActor
 open class EventCacheObserver {
     
-    public let eventCache: EventCache
+    public let eventCache: CompositeEventCache
     
     private var eventSubscription: AnyCancellable?
     public static let queue = DispatchQueue(label: "com.howlongleft.EventCacheObserver", attributes: .concurrent)
     
-    public init(eventCache: EventCache) {
+    public init(eventCache: CompositeEventCache) {
         self.eventCache = eventCache
         observeEventChanges()
     }
     
+   
+    
     open func eventsChanged() async { }
+    
     
     private final func observeEventChanges() {
         eventSubscription = eventCache.objectWillChange

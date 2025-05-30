@@ -9,7 +9,7 @@ import Foundation
 import CryptoKit
 
 public struct EventFetchResult {
-    var events: [HLLEvent]
+    var events: [HLLCalendarEvent]
     var calendars: [HLLCalendar]
     var predicateStart: Date?
     var predicateEnd: Date?

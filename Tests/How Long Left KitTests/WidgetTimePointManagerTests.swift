@@ -35,14 +35,14 @@ struct WidgetTimePointManagerTests {
         let mockTimePoint1 = TimePoint(
             date: currentDate.addingTimeInterval(3600),
             cacheSummaryHash: "hash1",
-            inProgressEvents: [HLLEvent.example],
+            inProgressEvents: [HLLCalendarEvent.example],
             upcomingEvents: []
         )
         let mockTimePoint2 = TimePoint(
             date: currentDate.addingTimeInterval(7200),
             cacheSummaryHash: "hash2",
             inProgressEvents: [],
-            upcomingEvents: [HLLEvent.example]
+            upcomingEvents: [HLLCalendarEvent.example]
         )
         widgetTimePointManager.timePointStore.points = [mockTimePoint1, mockTimePoint2]
 
@@ -62,7 +62,7 @@ struct WidgetTimePointManagerTests {
         let mockTimePoint = TimePoint(
             date: currentDate.addingTimeInterval(3600),
             cacheSummaryHash: "hash1",
-            inProgressEvents: [HLLEvent.example],
+            inProgressEvents: [HLLCalendarEvent.example],
             upcomingEvents: []
         )
         widgetTimePointManager.timePointStore.points = [mockTimePoint]
@@ -82,7 +82,7 @@ struct WidgetTimePointManagerTests {
         let mockTimePoint = TimePoint(
             date: currentDate.addingTimeInterval(3600),
             cacheSummaryHash: "hash1",
-            inProgressEvents: [HLLEvent.example],
+            inProgressEvents: [HLLCalendarEvent.example],
             upcomingEvents: []
         )
         widgetTimePointManager.timePointStore.points = [mockTimePoint]

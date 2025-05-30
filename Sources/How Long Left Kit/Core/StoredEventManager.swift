@@ -36,7 +36,7 @@ public class StoredEventManager: ObservableObject {
         
     }
     
-    public func addEventToStore(event: HLLEvent, removeIfExists: Bool = false) {
+    public func addEventToStore(event: HLLCalendarEvent, removeIfExists: Bool = false) {
         if removeIfExists {
             if let existingEventInfo = fetchEventInfo(matching: event.eventIdentifier) {
                 removeEventFromStore(eventInfo: existingEventInfo)
@@ -74,7 +74,7 @@ public class StoredEventManager: ObservableObject {
         }
     }
     
-    public func isEventStored(event: HLLEvent) -> Bool {
+    public func isEventStored(event: HLLCalendarEvent) -> Bool {
         return isEventStoredWith(eventID: event.eventIdentifier)
     }
     
@@ -112,7 +112,7 @@ public class StoredEventManager: ObservableObject {
     }
     
     // Create HiddenEventInfo
-    private func createEventInfo(with event: HLLEvent) {
+    private func createEventInfo(with event: HLLCalendarEvent) {
         
         let newHiddenEventInfo = StoredEventInfo(context: context)
         newHiddenEventInfo.eventID = event.eventIdentifier

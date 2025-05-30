@@ -12,15 +12,31 @@ public class DurationProgressManager: ObservableObject {
     @Published public var progress: Double = 0.0
     private var cancellables = Set<AnyCancellable>()
     
-    private let event: HLLCalendarEvent
-    
-    public init(event: HLLCalendarEvent) {
-        self.event = event
-        updateProgress()
-        start()
+    public var percentageString: String {
+        // clamp progress to the range [0, 1]
+        let clampedProgress = max(0.0, min(1.0, progress))
+        // format the percentage string
+        return String(format: "%.0f%%", clampedProgress * 100)
     }
     
-    private func start() {
+    private let start: Date
+    private let end: Date
+    
+    public init(event: HLLCalendarEvent) {
+        self.start = event.startDate
+        self.end = event.endDate
+        updateProgress()
+        startTimer()
+    }
+    
+    public init(start: Date, end: Date) {
+        self.start = start
+        self.end = end
+        updateProgress()
+        startTimer()
+    }
+    
+    private func startTimer() {
         let defaultPublisher = Timer.publish(every: 1.0, on: .main, in: .common).autoconnect().map { _ in () }.eraseToAnyPublisher()
         
         defaultPublisher
@@ -33,17 +49,17 @@ public class DurationProgressManager: ObservableObject {
     
     private func updateProgress() {
         let now = Date()
-        guard now >= event.startDate else {
+        guard now >= start else {
             self.progress = 0.0
             return
         }
-        guard now <= event.endDate else {
+        guard now <= end else {
             self.progress = 1.0
             return
         }
         
-        let totalDuration = event.endDate.timeIntervalSince(event.startDate)
-        let elapsed = now.timeIntervalSince(event.startDate)
+        let totalDuration = end.timeIntervalSince(start)
+        let elapsed = now.timeIntervalSince(start)
         self.progress = elapsed / totalDuration
     }
 }

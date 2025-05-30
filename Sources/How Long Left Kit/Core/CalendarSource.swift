@@ -75,7 +75,7 @@ public class CalendarSource: ObservableObject {
         let endDate = calendar.date(byAdding: .day, value: 14, to: now)!
         let end = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: endDate)!
         let request = eventStore.predicateForEvents(withStart: start, end: end, calendars: ekCalendars)
-        let events = eventStore.events(matching: request).map { HLLEvent(event: $0) }
+        let events = eventStore.events(matching: request).map { HLLCalendarEvent(event: $0) }
         return EventFetchResult(events: events, calendars: calendars, predicateStart: start, predicateEnd: end)
     }
     
@@ -114,6 +114,7 @@ public class CalendarSource: ObservableObject {
     }
     
     @objc private func eventStoreChanged() {
+        print("Event store changed")
         eventChangedSubject.send()
     }
 }

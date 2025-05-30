@@ -16,7 +16,7 @@ public class WidgetTimePointManager {
     private let userDefaults = UserDefaults(suiteName: "group.ryankontos.howlongleft")!
     private let userDefaultsKey = "WidgetComputedHash"
 
-    public init(eventCache: EventCache) {
+    public init(eventCache: CompositeEventCache) {
         self.timePointStore = TimePointStore(eventCache: eventCache)
     }
 

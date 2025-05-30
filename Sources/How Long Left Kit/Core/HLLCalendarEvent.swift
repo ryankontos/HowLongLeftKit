@@ -12,23 +12,15 @@ import EventKit
 import SwiftUI
 #endif
 
-public class HLLCalendarEvent: ObservableObject, Identifiable, Hashable, Equatable {
+public class HLLCalendarEvent: HLLEvent {
     
-    @Published public var title: String
-    @Published public var startDate: Date
-    @Published public var endDate: Date
-       
     @Published public var calendar: HLLCalendar
+    @Published public var structuredLocation: EKStructuredLocation?
+    @Published internal(set) public var isPinned: Bool = false
     
     public var calendarID: String {
         return calendar.calendarIdentifier
     }
-    
-    @Published public var isAllDay: Bool
-    
-    @Published public var structuredLocation: EKStructuredLocation?
-    
-    @Published internal(set) public var isPinned: Bool = false
     
     public var locationName: String? {
         if let locationName = structuredLocation?.title?.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -36,129 +28,49 @@ public class HLLCalendarEvent: ObservableObject, Identifiable, Hashable, Equatab
             return locationName
         }
         return nil
-
-        
     }
     
     public var location: CLLocation? {
         return structuredLocation?.geoLocation
     }
     
-    public var eventIdentifier: String
     
-    public var id: String
-    
-    public func completion(at date: Date = Date()) -> Double {
-            guard startDate <= date, endDate > date else {
-                return startDate > date ? 0.0 : 1.0
-            }
-            let totalDuration = endDate.timeIntervalSince(startDate)
-            let elapsedDuration = date.timeIntervalSince(startDate)
-            return max(0.0, min(1.0, elapsedDuration / totalDuration))
-    }
-    
-    init(event: EKEvent) {
-        self.title = event.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.startDate = event.startDate
-        self.endDate = event.endDate
-        self.id = event.id
-        self.eventIdentifier = event.eventIdentifier
-        self.calendar = HLLCalendar(ekCalendar: event.calendar)
-        self.isAllDay = event.isAllDay
+    public init(event: EKEvent) {
+        let hllCalendar = HLLCalendar(ekCalendar: event.calendar)
+        self.calendar = hllCalendar
         self.structuredLocation = event.structuredLocation
+        self.isPinned = false
+       
+        super.init(
+            title: event.title.trimmingCharacters(in: .whitespacesAndNewlines),
+            startDate: event.startDate,
+            endDate: event.endDate,
+            isAllDay: event.isAllDay,
+            eventIdentifier: event.eventIdentifier,
+            color: hllCalendar.color
+        )
     }
     
     public init(title: String, start: Date, end: Date, location: String? = nil, isAllDay: Bool = false, calendar: HLLCalendar) {
-        self.title = title
-        self.startDate = start
-        self.endDate = end
-        self.id = title
         self.calendar = calendar
-        self.isAllDay = isAllDay
+        self.structuredLocation = nil
         self.isPinned = false
-        
-        self.eventIdentifier = UUID().uuidString
-    }
-    
-    public func countdownDate(at date: Date = Date()) -> Date {
-        if status(at: date) == .upcoming {
-            return startDate
-        } else {
-            return endDate
-        }
-    }
-    
-    public func status(at date: Date = Date()) -> Status {
-        let currentDate = date
-
-        if currentDate < startDate {
-            return .upcoming
-        } else if currentDate >= startDate && currentDate < endDate {
-            return .inProgress
-        } else {
-            return .ended
-        }
+       
+        super.init(title: title, startDate: start, endDate: end, isAllDay: isAllDay, eventIdentifier: UUID().uuidString, color: calendar.color)
     }
 
-    
-    public func hash(into hasher: inout Hasher) {
+    override public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
-    
+
     public static func == (lhs: HLLCalendarEvent, rhs: HLLCalendarEvent) -> Bool {
-        lhs.id == rhs.id
+        return lhs.id == rhs.id && lhs.calendarID == rhs.calendarID
     }
     
-    public enum Status {
-        case ended
-        case inProgress
-        case upcoming
-    }
-    
-    public static func makeExampleEvent(title: String, start: Date = .now, end: Date) -> HLLCalendarEvent {
-        return HLLCalendarEvent(title: title, start: start, end: end, calendar: HLLCalendar(calendarIdentifier: UUID().uuidString, title: "Calendar", color: .cyan))
+    override public var id: String {
+        return super.id + "-" + calendarID
     }
         
-    
-    public static var example: HLLCalendarEvent {
-        return HLLCalendarEvent(title: "Example Event", start: Date(), end: Date().addingTimeInterval(3500), calendar: HLLCalendar(calendarIdentifier: UUID().uuidString, title: "Calendar", color: .pink))
-    }
-    
-    #if canImport(SwiftUI)
-    
+
   
-    public var color: Color {
-        return calendar.color
-    }
-    
-    #endif
-    
 }
-
-
-public extension Array where Element == HLLCalendarEvent {
-    
-    // Function to sort by start date
-    func sortedByStartDate() -> [HLLCalendarEvent] {
-        return self.sorted { $0.startDate < $1.startDate }
-    }
-    
-    // Function to sort by end date
-    func sortedByEndDate() -> [HLLCalendarEvent] {
-        return self.sorted { $0.endDate < $1.endDate }
-    }
-}
-
-public protocol EventInfoProtocol {
-    
-    var title: String { get set }
-    var startDate: Date { get set }
-    var endDate: Date { get set }
-    var isAllDay: Bool { get set }
-    var calendarID: String { get set }
-    var eventID: String { get set }
-    var isHidden: Bool { get }
-    var isPinned: Bool { get }
-    
-}
-

@@ -8,6 +8,7 @@
 import Foundation
 import Combine
 import os.log
+import SwiftUI
 
 @MainActor
 public class TimePointStore: EventCacheObserver, ObservableObject {
@@ -22,19 +23,16 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
         return getPointAt(date: Date())
     }
     
-    override public init(eventCache: EventCache) {
+    override public init(eventCache: CompositeEventCache) {
         super.init(eventCache: eventCache)
         
         Task {
-            
-           await updatePoints()
+            await updatePoints()
         }
     }
     
-  
-    
     public func getPointAt(date: Date) -> TimePoint? {
-        return points.last(where: { $0.date < date }) ?? points.first
+        return points.last(where: { $0.date <= date }) ?? points.first
     }
     
     private func updatePoints() async {
@@ -42,15 +40,11 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
         let newPoints = pointGen.generateTimePoints(for: events, withCacheSummaryHash: eventCache.cacheSummaryHash ?? "")
         
         let foundChanges = mergePoints(newPoints)
-
+        
         if foundChanges {
-            DispatchQueue.main.async {
-                self.scheduleNextUpdate()
-            }
+            scheduleNextUpdate()
         }
     }
-
-    
     
     private func mergePoints(_ newPoints: [TimePoint]) -> Bool {
         var updatedPoints = [TimePoint]()
@@ -68,41 +62,47 @@ public class TimePointStore: EventCacheObserver, ObservableObject {
             }
         }
 
-        // Sort the points by date, oldest first
         updatedPoints.sort { $0.date < $1.date }
+
+        
         
         if updatedPoints != points {
-            points = updatedPoints
-            objectWillChange.send()
+            print("Updating points from \(points.count) to \(updatedPoints.count)")
+            if points.isEmpty {
+                points = updatedPoints
+            } else {
+                withAnimation {
+                    points = updatedPoints
+                }
+            }
+            
+            
             changesDetected = true
         }
 
         return changesDetected
     }
 
-    
     private func scheduleNextUpdate() {
         updateTimer?.invalidate()
-        
+
         guard let nextUpdateTime = points.first(where: { $0.date > Date() })?.date else { return }
-        
+
         let timeInterval = nextUpdateTime.timeIntervalSinceNow
         guard timeInterval > 0 else { return }
-        
+
         updateTimer = Timer.scheduledTimer(withTimeInterval: timeInterval, repeats: false) { [weak self] _ in
             Task {
                 await self?.updatePoints()
             }
         }
-        
+
         if let updateTimer = updateTimer {
             RunLoop.main.add(updateTimer, forMode: .common)
         }
     }
     
-    public override func eventsChanged() async  {
-        
-            await updatePoints()
-        
+    public override func eventsChanged() async {
+        await updatePoints()
     }
 }

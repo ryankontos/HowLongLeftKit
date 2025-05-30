@@ -7,6 +7,7 @@
 
 import Foundation
 
+@MainActor
 public class EventListGroupProvider {
     
     private let dateFormatter = DateFormatterUtility()
@@ -17,7 +18,7 @@ public class EventListGroupProvider {
         self.listSettings = settingsManager
     }
     
-    public func getGroups(from point: TimePoint, selected: HLLEvent?) -> EventGroups {
+    public func getGroups(from point: TimePoint, selected: HLLCalendarEvent?) -> EventGroups {
         
         //print("Get event groups")
         

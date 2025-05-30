@@ -12,8 +12,9 @@ open class HLLCoreServicesContainer: ObservableObject {
     
     public let calendarReader: CalendarSource
     public let calendarPrefsManager: CalendarSettingsStore
-    public let eventCache: EventCache
+    public let eventCache: CompositeEventCache
     public let pointStore: TimePointStore
+    public let userEventSource: UserEventSource = UserEventSource(container: HLLPersistenceController.shared.persistentContainer)
     
     public let hiddenEventManager: StoredEventManager
     
@@ -35,7 +36,9 @@ open class HLLCoreServicesContainer: ObservableObject {
         
         selectedEventManager = StoredEventManager(domain: "\(domainString)_SelectedEvent", limit: 1)
         
-        eventCache = EventCache(calendarReader: calendarReader, calendarProvider: calendarPrefsManager, calendarContexts: [HLLStandardCalendarContexts.app.rawValue], hiddenEventManager: hiddenEventManager, id: "\(domainString)_EventCache")
+        let calCache = CalendarEventCache(calendarReader: calendarReader, calendarProvider: calendarPrefsManager, calendarContexts: [HLLStandardCalendarContexts.app.rawValue], hiddenEventManager: hiddenEventManager, id: "\(domainString)_EventCache")
+        
+        eventCache = CompositeEventCache(calendarCache: calCache, customSource: userEventSource)
         pointStore = TimePointStore(eventCache: eventCache)
         
         

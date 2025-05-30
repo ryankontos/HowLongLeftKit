@@ -8,7 +8,8 @@
 import Foundation
 import AppIntents
 
-public class TimePoint: Equatable, ObservableObject, Identifiable {
+@MainActor
+public class TimePoint: @preconcurrency Equatable, ObservableObject, @preconcurrency Identifiable {
     
     public var date: Date
     
@@ -20,7 +21,6 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
     public var allEvents: [HLLEvent] {
         return inProgressEvents + upcomingEvents
     }
-    
     
     public var id: Date { return date }
     
@@ -43,10 +43,11 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
                 fatalError("Event \(event.title) is not upcoming at \(date)")
             }
         }
+        
     }
     
     public static func == (lhs: TimePoint, rhs: TimePoint) -> Bool {
-        return lhs.date == rhs.date && lhs.inProgressEvents == rhs.inProgressEvents && lhs.upcomingEvents == rhs.upcomingEvents
+        return lhs.date == rhs.date && lhs.inProgressEvents.infoHash() == rhs.inProgressEvents.infoHash() && lhs.upcomingEvents.infoHash() == rhs.upcomingEvents.infoHash()
     }
     
     public func fetchSingleEvent(accordingTo rule: EventFetchRule, for calendarID: String? = nil) -> HLLEvent? {
@@ -65,7 +66,14 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
             var eventsToFilter: [HLLEvent] = upcomingEvents
             
             if let calendarID {
-                eventsToFilter = eventsToFilter.filter { $0.calendarID == calendarID }
+                eventsToFilter = eventsToFilter.filter {
+                    if let event = $0 as? HLLCalendarEvent {
+                        return event.calendarID == calendarID
+                    } else {
+                        return false
+                    }
+                }
+                    
             }
             
             filteredEvents = eventsToFilter.sortedByStartDate() // Only upcoming events, sorted by start date
@@ -74,7 +82,7 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
             var eventsToFilter: [HLLEvent] = inProgressEvents
             
             if let calendarID {
-                eventsToFilter = eventsToFilter.filter { $0.calendarID == calendarID }
+                eventsToFilter = eventsToFilter.onlyCalendarEvents().filter { $0.calendarID == calendarID }
             }
             
             filteredEvents = eventsToFilter.sortedByStartDate() // Only in-progress events, sorted by start date
@@ -84,8 +92,8 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
             var inProgressToFilter: [HLLEvent] = inProgressEvents
             
             if let calendarID {
-                upcomingToFilter = upcomingToFilter.filter { $0.calendarID == calendarID }
-                inProgressToFilter = inProgressToFilter.filter { $0.calendarID == calendarID }
+                upcomingToFilter = upcomingToFilter.onlyCalendarEvents().filter { $0.calendarID == calendarID }
+                inProgressToFilter = inProgressToFilter.onlyCalendarEvents().filter { $0.calendarID == calendarID }
             }
             
             filteredEvents = upcomingToFilter.sortedByStartDate() + inProgressToFilter.sortedByStartDate()
@@ -95,8 +103,8 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
             var upcomingToFilter: [HLLEvent] = upcomingEvents
             
             if let calendarID {
-                inProgressToFilter = inProgressToFilter.filter { $0.calendarID == calendarID }
-                upcomingToFilter = upcomingToFilter.filter { $0.calendarID == calendarID }
+                inProgressToFilter = inProgressToFilter.onlyCalendarEvents().filter { $0.calendarID == calendarID }
+                upcomingToFilter = upcomingToFilter.onlyCalendarEvents().filter { $0.calendarID == calendarID }
             }
             
             filteredEvents = inProgressToFilter.sortedByStartDate() + upcomingToFilter.sortedByStartDate()
@@ -105,7 +113,7 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
             var allToFilter: [HLLEvent] = allEvents
             
             if let calendarID {
-                allToFilter = allToFilter.filter { $0.calendarID == calendarID }
+                allToFilter = allToFilter.onlyCalendarEvents().filter { $0.calendarID == calendarID }
             }
             
             filteredEvents = allToFilter.sorted {
@@ -115,8 +123,6 @@ public class TimePoint: Equatable, ObservableObject, Identifiable {
         case .noEvents:
             filteredEvents = []
         }
-        
-       // print("fetching events for calendar \(calendarID ?? "") and returned \(filteredEvents.count) events")
         
         return filteredEvents
     }
